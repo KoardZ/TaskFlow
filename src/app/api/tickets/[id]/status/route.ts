@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, ensureDatabase } from '@/lib/prisma';
+import { checkDevAuth } from '@/lib/auth';
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAuth = await checkDevAuth();
+    if (!isAuth) {
+      return NextResponse.json(
+        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อเปลี่ยนสถานะงาน' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     await ensureDatabase();
 

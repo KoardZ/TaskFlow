@@ -34,6 +34,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAuth = await checkDevAuth();
+    if (!isAuth) {
+      return NextResponse.json(
+        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อแก้ไขข้อมูลตั๋วงาน' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     await ensureDatabase();
 
@@ -100,6 +108,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAuth = await checkDevAuth();
+    if (!isAuth) {
+      return NextResponse.json(
+        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อลบตั๋วงาน' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     await ensureDatabase();
 

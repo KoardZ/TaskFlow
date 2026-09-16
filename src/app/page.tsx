@@ -274,6 +274,10 @@ export default function DevDashboard() {
   // Create Ticket with optional image upload
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!newTitle.trim() || !newDescription.trim()) {
       alert('กรุณากรอกหัวข้อและรายละเอียดงาน');
       return;
@@ -333,6 +337,11 @@ export default function DevDashboard() {
 
   // Quick move status (supports Drag & Drop)
   const handleMoveStatus = async (ticket: TicketItem, newStatus: TicketStatus) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     if (newStatus === 'READY_FOR_REVIEW') {
       setSelectedTicketForReady(ticket);
       setReadyStagingUrl(ticket.stagingUrl || settingsData.defaultStagingUrl || '');
@@ -386,6 +395,10 @@ export default function DevDashboard() {
   // Confirm Ready for Review & Send LINE Flex Message
   const handleConfirmReadyForReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!selectedTicketForReady) return;
 
     try {
@@ -442,6 +455,10 @@ export default function DevDashboard() {
   // Open Edit Ticket Modal
   const handleOpenEditModal = (ticket: TicketItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     setEditingTicket(ticket);
     setEditTitle(ticket.title);
     setEditDescription(ticket.description);
@@ -454,6 +471,10 @@ export default function DevDashboard() {
   // Save Ticket Edit
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     if (!editingTicket) return;
     if (!editTitle.trim() || !editDescription.trim()) {
       alert('กรุณากรอกหัวข้อและรายละเอียดงาน');
@@ -518,6 +539,10 @@ export default function DevDashboard() {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
+    }
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
     }
     if (!window.confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่? (ลบแล้วจะไม่สามารถกู้คืนได้)')) return;
     try {
@@ -600,11 +625,18 @@ export default function DevDashboard() {
           {/* Quick Action Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
-              onClick={() => setShowNewTicketModal(true)}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  setShowAuthModal(true);
+                  return;
+                }
+                setShowNewTicketModal(true);
+              }}
               className="btn btn-taskflow"
               style={{ fontSize: '0.825rem', padding: '7px 14px' }}
+              title={!isAuthenticated ? 'ใส่รหัส Dev เพื่อสร้างตั๋วงาน' : 'สร้างตั๋วงานใหม่'}
             >
-              <Plus size={16} /> <span className="nav-action-text">สร้างตั๋วงาน</span>
+              {isAuthenticated ? <Plus size={16} /> : <Lock size={14} />} <span className="nav-action-text">สร้างตั๋วงาน</span>
             </button>
 
             {isAuthenticated ? (
@@ -732,23 +764,48 @@ export default function DevDashboard() {
           {/* สลับมุมมอง และ รีเฟรช */}
           <div className="filter-actions-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {viewMode === 'KANBAN' && (
-              <div
-                className="helper-drag-text"
-                style={{
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 11px',
-                  borderRadius: 8,
-                  background: 'rgba(56, 189, 248, 0.08)',
-                  border: '1px solid rgba(56, 189, 248, 0.22)',
-                  fontSize: '0.75rem',
-                  color: '#BAE6FD',
-                  fontWeight: 500,
-                }}
-              >
-                <Sparkles size={13} color="#38BDF8" />
-                <span>ลากการ์ดวางข้ามคอลัมน์เพื่อเปลี่ยนสถานะ</span>
-              </div>
+              isAuthenticated ? (
+                <div
+                  className="helper-drag-text"
+                  style={{
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 11px',
+                    borderRadius: 8,
+                    background: 'rgba(56, 189, 248, 0.08)',
+                    border: '1px solid rgba(56, 189, 248, 0.22)',
+                    fontSize: '0.75rem',
+                    color: '#BAE6FD',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Sparkles size={13} color="#38BDF8" />
+                  <span>ลากการ์ดวางข้ามคอลัมน์เพื่อเปลี่ยนสถานะ</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="helper-drag-text"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 11px',
+                    borderRadius: 8,
+                    background: 'rgba(235, 10, 30, 0.08)',
+                    border: '1px solid rgba(235, 10, 30, 0.25)',
+                    fontSize: '0.75rem',
+                    color: '#FDA4AF',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                  title="คลิกเพื่อใส่รหัส Dev สำหรับจัดการบอร์ด"
+                >
+                  <Lock size={12} color="#EB0A1E" />
+                  <span>โหมดดูข้อมูล (ใส่รหัส Dev เพื่อจัดการบอร์ด)</span>
+                </button>
+              )
             )}
 
             <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.8)', padding: 3, borderRadius: 8, border: '1px solid var(--border-card)' }}>
@@ -861,9 +918,13 @@ export default function DevDashboard() {
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      const ticketId = e.dataTransfer.getData('text/plain') || draggedTicketId;
                       setDragOverColId(null);
                       setDraggedTicketId(null);
+                      if (!isAuthenticated) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      const ticketId = e.dataTransfer.getData('text/plain') || draggedTicketId;
                       if (!ticketId) return;
 
                       const ticket = tickets.find((t) => t.id === ticketId);
@@ -921,8 +982,13 @@ export default function DevDashboard() {
                           return (
                             <div
                               key={ticket.id}
-                              draggable={true}
+                              draggable={isAuthenticated}
                               onDragStart={(e) => {
+                                if (!isAuthenticated) {
+                                  e.preventDefault();
+                                  setShowAuthModal(true);
+                                  return;
+                                }
                                 e.dataTransfer.setData('text/plain', ticket.id);
                                 e.dataTransfer.effectAllowed = 'move';
                                 setDraggedTicketId(ticket.id);
@@ -959,9 +1025,11 @@ export default function DevDashboard() {
                                   >
                                     {ticket.createdBy === 'CLIENT' ? 'ลูกค้า' : 'ทีม Dev'}
                                   </span>
-                                  <span title="คลิกลากเพื่อย้ายสถานะ" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                    <GripVertical size={14} className="drag-grip" color="#64748B" />
-                                  </span>
+                                  {isAuthenticated && (
+                                    <span title="คลิกลากเพื่อย้ายสถานะ" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                      <GripVertical size={14} className="drag-grip" color="#64748B" />
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
@@ -1127,91 +1195,98 @@ export default function DevDashboard() {
                                       <Eye size={12} /> คอมเมนต์
                                     </Link>
                                   )}
+                                  {!isAuthenticated && !['READY_FOR_REVIEW', 'APPROVED', 'REWORK'].includes(ticket.status) && (
+                                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>
+                                      {ticket.status === 'IN_PROGRESS' ? 'กำลังดำเนินการ' : 'รอดำเนินการ'}
+                                    </span>
+                                  )}
                                 </div>
 
-                                <div
-                                  style={{ display: 'flex', gap: 4, alignItems: 'center' }}
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                  onTouchStart={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    type="button"
-                                    draggable={false}
+                                {isAuthenticated && (
+                                  <div
+                                    style={{ display: 'flex', gap: 4, alignItems: 'center' }}
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onTouchStart={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setQuickMoveTicket(ticket);
-                                    }}
-                                    style={{
-                                      background: 'rgba(56, 189, 248, 0.08)',
-                                      border: '1px solid rgba(56, 189, 248, 0.22)',
-                                      color: '#38BDF8',
-                                      cursor: 'pointer',
-                                      padding: '4px 7px',
-                                      borderRadius: 6,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.15s ease',
-                                    }}
-                                    title="ย้ายสถานะ (Quick Move สำหรับมือถือ/แท็บเล็ต)"
                                   >
-                                    <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
-                                  </button>
+                                    <button
+                                      type="button"
+                                      draggable={false}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setQuickMoveTicket(ticket);
+                                      }}
+                                      style={{
+                                        background: 'rgba(56, 189, 248, 0.08)',
+                                        border: '1px solid rgba(56, 189, 248, 0.22)',
+                                        color: '#38BDF8',
+                                        cursor: 'pointer',
+                                        padding: '4px 7px',
+                                        borderRadius: 6,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                      title="ย้ายสถานะ (Quick Move สำหรับมือถือ/แท็บเล็ต)"
+                                    >
+                                      <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
+                                    </button>
 
-                                  <button
-                                    type="button"
-                                    draggable={false}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onTouchStart={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenEditModal(ticket, e);
-                                    }}
-                                    style={{
-                                      background: 'rgba(255, 255, 255, 0.05)',
-                                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                                      color: '#94A3B8',
-                                      cursor: 'pointer',
-                                      padding: '4px 7px',
-                                      borderRadius: 6,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.15s ease',
-                                    }}
-                                    title="แก้ไขข้อมูลตั๋วงาน"
-                                  >
-                                    <Pencil size={13} style={{ pointerEvents: 'none' }} />
-                                  </button>
+                                    <button
+                                      type="button"
+                                      draggable={false}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEditModal(ticket, e);
+                                      }}
+                                      style={{
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        color: '#94A3B8',
+                                        cursor: 'pointer',
+                                        padding: '4px 7px',
+                                        borderRadius: 6,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                      title="แก้ไขข้อมูลตั๋วงาน"
+                                    >
+                                      <Pencil size={13} style={{ pointerEvents: 'none' }} />
+                                    </button>
 
-                                  <button
-                                    type="button"
-                                    draggable={false}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onTouchStart={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTicket(ticket.id, e);
-                                    }}
-                                    style={{
-                                      background: 'rgba(239, 68, 68, 0.08)',
-                                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                                      color: '#F87171',
-                                      cursor: 'pointer',
-                                      padding: '4px 7px',
-                                      borderRadius: 6,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.15s ease',
-                                    }}
-                                    title="ลบตั๋วงาน"
-                                  >
-                                    <Trash2 size={13} style={{ pointerEvents: 'none' }} />
-                                  </button>
-                                </div>
+                                    <button
+                                      type="button"
+                                      draggable={false}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteTicket(ticket.id, e);
+                                      }}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.08)',
+                                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                                        color: '#F87171',
+                                        cursor: 'pointer',
+                                        padding: '4px 7px',
+                                        borderRadius: 6,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                      title="ลบตั๋วงาน"
+                                    >
+                                      <Trash2 size={13} style={{ pointerEvents: 'none' }} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
@@ -1367,30 +1442,38 @@ export default function DevDashboard() {
                                   <Eye size={12} /> คอมเมนต์
                                 </Link>
                               )}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setQuickMoveTicket(ticket);
-                                }}
-                                style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.22)', color: '#38BDF8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
-                                title="ย้ายสถานะ"
-                              >
-                                <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
-                              </button>
-                              <button
-                                onClick={(e) => handleOpenEditModal(ticket, e)}
-                                style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
-                                title="แก้ไขข้อมูลตั๋วงาน"
-                              >
-                                <Pencil size={13} style={{ pointerEvents: 'none' }} />
-                              </button>
-                              <button
-                                onClick={(e) => handleDeleteTicket(ticket.id, e)}
-                                style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#F87171', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
-                                title="ลบตั๋วงาน"
-                              >
-                                <Trash2 size={13} style={{ pointerEvents: 'none' }} />
-                              </button>
+                              {isAuthenticated ? (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setQuickMoveTicket(ticket);
+                                    }}
+                                    style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.22)', color: '#38BDF8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
+                                    title="ย้ายสถานะ"
+                                  >
+                                    <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleOpenEditModal(ticket, e)}
+                                    style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
+                                    title="แก้ไขข้อมูลตั๋วงาน"
+                                  >
+                                    <Pencil size={13} style={{ pointerEvents: 'none' }} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleDeleteTicket(ticket.id, e)}
+                                    style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#F87171', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
+                                    title="ลบตั๋วงาน"
+                                  >
+                                    <Trash2 size={13} style={{ pointerEvents: 'none' }} />
+                                  </button>
+                                </>
+                              ) : (
+                                !['READY_FOR_REVIEW', 'APPROVED', 'REWORK'].includes(ticket.status) && (
+                                  <span style={{ color: '#64748B', fontSize: '0.75rem' }}>ดูอย่างเดียว</span>
+                                )
+                              )}
                             </div>
                           </td>
                         </tr>
