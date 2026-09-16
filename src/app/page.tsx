@@ -36,6 +36,8 @@ import {
   Paperclip,
   Pencil,
   GripVertical,
+  ArrowRightLeft,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
@@ -122,6 +124,10 @@ export default function DevDashboard() {
 
   // Lightbox modal for previewing images
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+
+  // Responsive & Quick Move state for Mobile/Tablet
+  const [activeMobileCol, setActiveMobileCol] = useState<TicketStatus>('BACKLOG');
+  const [quickMoveTicket, setQuickMoveTicket] = useState<TicketItem | null>(null);
 
   // New ticket form
   const [newTitle, setNewTitle] = useState('');
@@ -616,7 +622,7 @@ export default function DevDashboard() {
           </div>
 
           {/* Quick Action Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Link
               href="/submit"
               target="_blank"
@@ -624,7 +630,7 @@ export default function DevDashboard() {
               title="เปิดฟอร์มสำหรับลูกค้าเพื่อแจ้งคอมเมนต์หรือเปิดตั๋วใหม่"
               style={{ fontSize: '0.8rem', padding: '7px 12px' }}
             >
-              <Smartphone size={15} color="#38BDF8" /> ฟอร์มลูกค้าแจ้งเรื่อง
+              <Smartphone size={15} color="#38BDF8" /> <span className="nav-action-text">ฟอร์มลูกค้าแจ้งเรื่อง</span>
             </Link>
 
             <button
@@ -632,7 +638,7 @@ export default function DevDashboard() {
               className="btn btn-taskflow"
               style={{ fontSize: '0.825rem', padding: '7px 14px' }}
             >
-              <Plus size={16} /> สร้างตั๋วงาน
+              <Plus size={16} /> <span className="nav-action-text">สร้างตั๋วงาน</span>
             </button>
 
             <button
@@ -651,7 +657,7 @@ export default function DevDashboard() {
                 title="คลิกเพื่อออกจากระบบ Dev"
                 style={{ padding: '7px 12px', fontSize: '0.75rem', color: '#34D399', borderColor: 'rgba(16, 185, 129, 0.3)' }}
               >
-                <Unlock size={14} /> Dev Active
+                <Unlock size={14} /> <span className="nav-action-text">Dev Active</span>
               </button>
             ) : (
               <button
@@ -660,32 +666,32 @@ export default function DevDashboard() {
                 title="เข้าสู่ระบบด้วยรหัส Dev เพื่อจัดการบอร์ด"
                 style={{ padding: '7px 12px', fontSize: '0.75rem', color: '#FDA4AF' }}
               >
-                <Lock size={14} /> ใส่รหัส Dev
+                <Lock size={14} /> <span className="nav-action-text">ใส่รหัส Dev</span>
               </button>
             )}
           </div>
         </div>
       </nav>
 
-      {/* 2. สรุปภาพรวม (Metric Cards) - ทุกการ์ดใช้หน่วย "รายการ" สม่ำเสมอ ไม่ไทยคำอังกฤษคำ */}
+      {/* 2. สรุปภาพรวม (Metric Cards) */}
       <div style={{ padding: '10px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 23, 0.7)', flexShrink: 0 }}>
-        <div style={{ maxWidth: 1680, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+        <div className="metrics-grid-container" style={{ maxWidth: 1680, margin: '0 auto' }}>
           {/* Card 1: งานทั้งหมด */}
-          <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="glass-panel metric-card-inner" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <span style={{ fontSize: '0.725rem', color: '#94A3B8', fontWeight: 600 }}>งานทั้งหมด</span>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2, marginTop: 2 }}>
+              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2, marginTop: 2 }}>
                 {stats.total} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748B' }}>รายการ</span>
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Layers size={17} color="#94A3B8" />
             </div>
           </div>
 
           {/* Card 2: รอตรวจรับงาน */}
           <div
-            className="glass-panel"
+            className="glass-panel metric-card-inner"
             style={{
               padding: '10px 16px',
               display: 'flex',
@@ -702,43 +708,43 @@ export default function DevDashboard() {
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
                 )}
               </div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FCD34D', lineHeight: 1.2, marginTop: 2 }}>
+              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FCD34D', lineHeight: 1.2, marginTop: 2 }}>
                 {stats.ready} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#94A3B8' }}>รายการ</span>
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <ShieldAlert size={17} color="#F59E0B" />
             </div>
           </div>
 
           {/* Card 3: ตรวจผ่านแล้ว */}
-          <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="glass-panel metric-card-inner" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ flex: 1, marginRight: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                 <span style={{ fontSize: '0.725rem', color: '#6EE7B7', fontWeight: 600 }}>ตรวจผ่านแล้ว</span>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10B981' }}>{stats.passRate}% สำเร็จ</span>
               </div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2 }}>
+              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2 }}>
                 {stats.approved} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748B' }}>รายการ</span>
               </div>
               <div style={{ width: '100%', height: 4, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 99, marginTop: 4, overflow: 'hidden' }}>
                 <div style={{ width: `${stats.passRate}%`, height: '100%', background: '#10B981', borderRadius: 99 }} />
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <CheckCircle2 size={17} color="#10B981" />
             </div>
           </div>
 
           {/* Card 4: แจ้งแก้ไขเพิ่ม */}
-          <div className="glass-panel" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="glass-panel metric-card-inner" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <span style={{ fontSize: '0.725rem', color: stats.rework > 0 ? '#FDA4AF' : '#94A3B8', fontWeight: 600 }}>แจ้งแก้ไขเพิ่ม</span>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: stats.rework > 0 ? '#EF4444' : '#F8FAFC', lineHeight: 1.2, marginTop: 2 }}>
+              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: stats.rework > 0 ? '#EF4444' : '#F8FAFC', lineHeight: 1.2, marginTop: 2 }}>
                 {stats.rework} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748B' }}>รายการ</span>
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <RotateCcw size={17} color="#EF4444" />
             </div>
           </div>
@@ -746,12 +752,12 @@ export default function DevDashboard() {
       </div>
 
       {/* 3. แถบเครื่องมือ ค้นหา และกรองข้อมูล */}
-      <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 23, 0.5)', flexShrink: 0 }}>
-        <div style={{ maxWidth: 1680, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 23, 0.5)', flexShrink: 0 }}>
+        <div className="filter-bar-inner" style={{ maxWidth: 1680, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           {/* ค้นหาและตัวกรอง */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 auto', minWidth: 280, maxWidth: 840 }}>
+          <div className="filter-controls-group" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 260, maxWidth: 840 }}>
             {/* ค้นหา */}
-            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 160 }}>
+            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 160, width: '100%' }}>
               <Search size={15} color="#64748B" style={{ position: 'absolute', left: 12, top: 11 }} />
               <input
                 type="text"
@@ -771,39 +777,42 @@ export default function DevDashboard() {
               )}
             </div>
 
-            {/* กรองความสำคัญ */}
-            <select
-              className="select-field"
-              style={{ minWidth: 185, width: 185, flexShrink: 0, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-            >
-              <option value="ALL">ความสำคัญ: ทั้งหมด</option>
-              <option value="URGENT">🔴 เร่งด่วน</option>
-              <option value="HIGH">🟠 สูง</option>
-              <option value="MEDIUM">🔵 ปานกลาง</option>
-              <option value="LOW">⚪ ทั่วไป</option>
-            </select>
+            {/* แถวดรอปดาวน์สำหรับฟิลเตอร์ */}
+            <div className="filter-selects-row">
+              {/* กรองความสำคัญ */}
+              <select
+                className="select-field"
+                style={{ minWidth: 160, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+              >
+                <option value="ALL">ความสำคัญ: ทั้งหมด</option>
+                <option value="URGENT">🔴 เร่งด่วน</option>
+                <option value="HIGH">🟠 สูง</option>
+                <option value="MEDIUM">🔵 ปานกลาง</option>
+                <option value="LOW">⚪ ทั่วไป</option>
+              </select>
 
-            {/* กรองผู้เปิด */}
-            <select
-              className="select-field"
-              style={{ minWidth: 160, width: 160, flexShrink: 0, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
-              value={creatorFilter}
-              onChange={(e) => setCreatorFilter(e.target.value)}
-            >
-              <option value="ALL">ผู้เปิด: ทั้งหมด</option>
-              <option value="CLIENT">ลูกค้า (Client)</option>
-              <option value="DEV">ทีม Dev</option>
-            </select>
+              {/* กรองผู้เปิด */}
+              <select
+                className="select-field"
+                style={{ minWidth: 150, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                value={creatorFilter}
+                onChange={(e) => setCreatorFilter(e.target.value)}
+              >
+                <option value="ALL">ผู้เปิด: ทั้งหมด</option>
+                <option value="CLIENT">ลูกค้า (Client)</option>
+                <option value="DEV">ทีม Dev</option>
+              </select>
+            </div>
           </div>
 
           {/* สลับมุมมอง และ รีเฟรช */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="filter-actions-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {viewMode === 'KANBAN' && (
               <div
+                className="helper-drag-text"
                 style={{
-                  display: 'flex',
                   alignItems: 'center',
                   gap: 6,
                   padding: '5px 11px',
@@ -824,16 +833,16 @@ export default function DevDashboard() {
               <button
                 onClick={() => setViewMode('KANBAN')}
                 className={`btn ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ padding: '5px 12px', fontSize: '0.775rem', borderRadius: 6 }}
+                style={{ padding: '5px 10px', fontSize: '0.775rem', borderRadius: 6 }}
               >
-                <LayoutGrid size={14} /> มุมมองบอร์ด
+                <LayoutGrid size={14} /> <span className="nav-action-text">มุมมอง</span>บอร์ด
               </button>
               <button
                 onClick={() => setViewMode('TABLE')}
                 className={`btn ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ padding: '5px 12px', fontSize: '0.775rem', borderRadius: 6 }}
+                style={{ padding: '5px 10px', fontSize: '0.775rem', borderRadius: 6 }}
               >
-                <List size={14} /> มุมมองตาราง
+                <List size={14} /> <span className="nav-action-text">มุมมอง</span>ตาราง
               </button>
             </div>
 
@@ -850,19 +859,65 @@ export default function DevDashboard() {
       </div>
 
       {/* 4. พื้นที่แสดงผล: มุมมองบอร์ด หรือ มุมมองตาราง */}
-      <main style={{ flex: 1, minHeight: 0, padding: '12px 24px 14px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, minHeight: 0, padding: '10px 16px 14px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ maxWidth: 1680, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {viewMode === 'KANBAN' ? (
             /* KANBAN VIEW */
-            <div className="kanban-grid" style={{ flex: 1, minHeight: 0, height: '100%' }}>
-              {COLUMNS.map((col) => {
-                const colTickets = filteredTickets.filter((t) => t.status === col.id);
-                const IconComponent = col.icon;
+            <>
+              {/* แถบแท็บเลือกคอลัมน์บน Tablet/Mobile */}
+              <div className="mobile-column-tabs">
+                {COLUMNS.map((col) => {
+                  const count = filteredTickets.filter((t) => t.status === col.id).length;
+                  const isActive = activeMobileCol === col.id;
+                  const IconComponent = col.icon;
+                  return (
+                    <button
+                      key={col.id}
+                      type="button"
+                      className={`mobile-tab-btn ${isActive ? 'active' : ''}`}
+                      style={{
+                        '--tab-color': col.color,
+                        '--tab-bg': col.bgGradient,
+                        '--tab-glow': `${col.color}40`,
+                      } as React.CSSProperties}
+                      onClick={() => {
+                        setActiveMobileCol(col.id);
+                        document.getElementById(`col-${col.id}`)?.scrollIntoView({
+                          behavior: 'smooth',
+                          inline: 'center',
+                          block: 'nearest',
+                        });
+                      }}
+                    >
+                      <IconComponent size={13} color={isActive ? col.color : '#94A3B8'} />
+                      <span>{col.label}</span>
+                      <span
+                        style={{
+                          fontSize: '0.675rem',
+                          padding: '1px 6px',
+                          borderRadius: 99,
+                          background: isActive ? col.color : 'rgba(255, 255, 255, 0.1)',
+                          color: isActive ? '#000000' : '#CBD5E1',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                return (
-                  <div
-                    key={col.id}
-                    className={`kanban-column ${dragOverColId === col.id ? 'drag-over' : ''}`}
+              <div className="kanban-grid" style={{ flex: 1, minHeight: 0, height: '100%' }}>
+                {COLUMNS.map((col) => {
+                  const colTickets = filteredTickets.filter((t) => t.status === col.id);
+                  const IconComponent = col.icon;
+
+                  return (
+                    <div
+                      key={col.id}
+                      id={`col-${col.id}`}
+                      className={`kanban-column ${dragOverColId === col.id ? 'drag-over' : ''}`}
                     style={{
                       '--col-highlight': col.color,
                       '--col-highlight-bg': col.bgGradient,
@@ -1178,6 +1233,32 @@ export default function DevDashboard() {
                                     onTouchStart={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      setQuickMoveTicket(ticket);
+                                    }}
+                                    style={{
+                                      background: 'rgba(56, 189, 248, 0.08)',
+                                      border: '1px solid rgba(56, 189, 248, 0.22)',
+                                      color: '#38BDF8',
+                                      cursor: 'pointer',
+                                      padding: '4px 7px',
+                                      borderRadius: 6,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title="ย้ายสถานะ (Quick Move สำหรับมือถือ/แท็บเล็ต)"
+                                  >
+                                    <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    draggable={false}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleOpenEditModal(ticket, e);
                                     }}
                                     style={{
@@ -1247,6 +1328,7 @@ export default function DevDashboard() {
                 );
               })}
             </div>
+            </>
           ) : (
             /* TABLE VIEW */
             <div className="table-container" style={{ flex: 1, minHeight: 0, height: '100%' }}>
@@ -1392,6 +1474,16 @@ export default function DevDashboard() {
                                   <Eye size={12} /> คอมเมนต์
                                 </Link>
                               )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setQuickMoveTicket(ticket);
+                                }}
+                                style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.22)', color: '#38BDF8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
+                                title="ย้ายสถานะ"
+                              >
+                                <ArrowRightLeft size={13} style={{ pointerEvents: 'none' }} />
+                              </button>
                               <button
                                 onClick={(e) => handleOpenEditModal(ticket, e)}
                                 style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
@@ -2262,6 +2354,113 @@ export default function DevDashboard() {
                 ยกเลิก
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 11. Modal: ย้ายสถานะตั๋วงาน (Quick Move สำหรับ Mobile / Touch) */}
+      {quickMoveTicket && (
+        <div className="modal-overlay" onClick={() => setQuickMoveTicket(null)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: 420, padding: 0, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <span className="ticket-tag" style={{ color: '#38BDF8', fontSize: '0.8rem' }}>
+                    TF-{String(quickMoveTicket.ticketNumber).padStart(2, '0')}
+                  </span>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#F8FAFC' }}>
+                    ย้ายสถานะงาน
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.775rem', color: '#94A3B8', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {quickMoveTicket.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickMoveTicket(null)}
+                className="btn btn-ghost"
+                style={{ padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>เลือกสถานะที่ต้องการเปลี่ยน:</p>
+              {COLUMNS.map((col) => {
+                const IconComp = col.icon;
+                const isCurrent = quickMoveTicket.status === col.id;
+                return (
+                  <button
+                    key={col.id}
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => {
+                      const target = quickMoveTicket;
+                      setQuickMoveTicket(null);
+                      handleMoveStatus(target, col.id);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      border: isCurrent ? `1.5px solid ${col.color}` : '1px solid var(--border-card)',
+                      background: isCurrent ? col.bgGradient : 'rgba(15, 23, 42, 0.6)',
+                      cursor: isCurrent ? 'default' : 'pointer',
+                      opacity: isCurrent ? 0.6 : 1,
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 8,
+                          background: col.bgGradient,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <IconComp size={16} color={col.color} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#F8FAFC' }}>
+                          {col.label}
+                        </div>
+                        {isCurrent && (
+                          <div style={{ fontSize: '0.7rem', color: col.color, fontWeight: 500 }}>
+                            สถานะปัจจุบัน
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <ArrowRight size={15} color={isCurrent ? col.color : '#64748B'} />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-subtle)', background: 'rgba(11, 15, 23, 0.5)', textAlign: 'right' }}>
+              <button
+                type="button"
+                onClick={() => setQuickMoveTicket(null)}
+                className="btn btn-secondary"
+                style={{ width: '100%', padding: '9px 16px', fontSize: '0.825rem' }}
+              >
+                ยกเลิก
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -586,3 +586,164 @@ body {
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+
+/* ==========================================================
+   Responsive Architecture: Desktop / Tablet / Mobile
+   ========================================================== */
+
+/* Metric Cards Responsive Grid */
+.metrics-grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* Mobile Column Tab Switcher (hidden on desktop) */
+.mobile-column-tabs {
+  display: none;
+}
+
+.mobile-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.775rem;
+  font-weight: 600;
+  border: 1px solid var(--border-card);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.mobile-tab-btn.active {
+  background: var(--tab-bg, rgba(56, 189, 248, 0.15));
+  border-color: var(--tab-color, #38BDF8);
+  color: #FFFFFF;
+  box-shadow: 0 0 12px var(--tab-glow, rgba(56, 189, 248, 0.25));
+}
+
+/* Nav & Filter Responsive Helpers */
+.nav-action-text {
+  display: inline;
+}
+
+.helper-drag-text {
+  display: flex;
+}
+
+/* TABLET BREAKPOINT (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .metrics-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .mobile-column-tabs {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 2px 0 10px;
+    margin-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .mobile-column-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .kanban-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 14px;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-column {
+    flex: 0 0 320px;
+    min-width: 300px;
+    scroll-snap-align: start;
+    height: 100%;
+  }
+
+  .helper-drag-text {
+    display: none;
+  }
+}
+
+/* MOBILE BREAKPOINT (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Navigation */
+  .glass-nav {
+    padding: 8px 12px !important;
+  }
+  .nav-action-text {
+    display: none;
+  }
+
+  /* Metric Cards */
+  .metrics-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .metric-card-inner {
+    padding: 8px 10px !important;
+  }
+  .metric-number {
+    font-size: 1.2rem !important;
+  }
+
+  /* Filter Bar */
+  .filter-bar-inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .filter-controls-group {
+    flex-direction: column !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .filter-selects-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  .filter-selects-row select {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .filter-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Kanban Grid on Mobile */
+  .kanban-column {
+    flex: 0 0 calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    scroll-snap-align: center;
+    border-radius: var(--radius-md);
+  }
+
+  /* Modals on Mobile */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end;
+  }
+  .modal-content {
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    border-radius: 16px 16px 0 0 !important;
+  }
+}
+
