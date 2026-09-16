@@ -35,6 +35,7 @@ export default function ReviewPage({
 
   // Reviewer info (LIFF or fallback)
   const [reviewerName, setReviewerName] = useState<string>('');
+  const [nameError, setNameError] = useState(false);
   const [reviewerPicture, setReviewerPicture] = useState<string | null>(null);
   const [reviewerLineId, setReviewerLineId] = useState<string | null>(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
@@ -107,7 +108,13 @@ export default function ReviewPage({
     if (!ticket) return;
     const cleanName = reviewerName.trim();
     if (!cleanName) {
-      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนยืนยันอนุมัติ');
+      setNameError(true);
+      setShowApproveConfirm(false);
+      const el = document.getElementById('reviewer-name-input');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -151,7 +158,12 @@ export default function ReviewPage({
     if (!ticket) return;
     const cleanName = reviewerName.trim();
     if (!cleanName) {
-      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนส่งแจ้งแก้ไข');
+      setNameError(true);
+      const el = document.getElementById('reviewer-name-input');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     if (!rejectionReason.trim()) {
@@ -527,26 +539,46 @@ export default function ReviewPage({
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* ชื่อผู้ตรวจรับงาน (บังคับระบุ) */}
-              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: '12px 14px' }}>
+              <div
+                style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  border: nameError && !reviewerName.trim() ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  transition: 'border-color 0.2s ease',
+                }}
+              >
                 <label className="input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ color: '#F8FAFC', fontWeight: 700 }}>ชื่อผู้ตรวจรับงาน *</span>
-                  <span style={{ fontSize: '0.725rem', color: !reviewerName.trim() ? '#EF4444' : '#10B981', fontWeight: 600 }}>
-                    {!reviewerName.trim() ? 'จำเป็นต้องระบุ' : '✓ ระบุแล้ว'}
-                  </span>
+                  {nameError && !reviewerName.trim() ? (
+                    <span style={{ fontSize: '0.725rem', color: '#EF4444', fontWeight: 600 }}>
+                      จำเป็นต้องระบุ
+                    </span>
+                  ) : reviewerName.trim() ? (
+                    <span style={{ fontSize: '0.725rem', color: '#10B981', fontWeight: 600 }}>
+                      ✓ ระบุแล้ว
+                    </span>
+                  ) : null}
                 </label>
                 <input
+                  id="reviewer-name-input"
                   type="text"
                   required
                   className="input-field"
                   value={reviewerName}
-                  onChange={(e) => setReviewerName(e.target.value)}
+                  onChange={(e) => {
+                    setReviewerName(e.target.value);
+                    if (nameError && e.target.value.trim()) {
+                      setNameError(false);
+                    }
+                  }}
                   placeholder="พิมพ์ชื่อของคุณ เช่น คุณสมชาย, แอดมินตาล"
                   style={{
-                    borderColor: !reviewerName.trim() ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.4)',
+                    borderColor: nameError && !reviewerName.trim() ? '#EF4444' : (reviewerName.trim() ? 'rgba(16, 185, 129, 0.4)' : undefined),
                   }}
                 />
-                {!reviewerName.trim() && (
-                  <p style={{ fontSize: '0.75rem', color: '#FDA4AF', marginTop: 4 }}>
+                {nameError && !reviewerName.trim() && (
+                  <p style={{ fontSize: '0.75rem', color: '#FDA4AF', marginTop: 6 }}>
                     * กรุณาระบุชื่อผู้ตรวจรับก่อนกดยืนยันอนุมัติหรือส่งแจ้งแก้ไข
                   </p>
                 )}
@@ -556,9 +588,15 @@ export default function ReviewPage({
               <button
                 onClick={() => {
                   if (!reviewerName.trim()) {
-                    alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนกดยืนยันอนุมัติ');
+                    setNameError(true);
+                    const el = document.getElementById('reviewer-name-input');
+                    if (el) {
+                      el.focus();
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                     return;
                   }
+                  setNameError(false);
                   setShowApproveConfirm(true);
                 }}
                 disabled={submitting}
@@ -573,9 +611,15 @@ export default function ReviewPage({
                 <button
                   onClick={() => {
                     if (!reviewerName.trim()) {
-                      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนแจ้งแก้ไข');
+                      setNameError(true);
+                      const el = document.getElementById('reviewer-name-input');
+                      if (el) {
+                        el.focus();
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
                       return;
                     }
+                    setNameError(false);
                     setShowRejectForm(true);
                   }}
                   disabled={submitting}
