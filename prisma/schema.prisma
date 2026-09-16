@@ -1,0 +1,69 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Ticket {
+  id              String         @id @default(cuid())
+  ticketNumber    Int            @unique
+  title           String
+  description     String
+  priority        String         @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  status          String         @default("BACKLOG") // "BACKLOG" | "IN_PROGRESS" | "READY_FOR_REVIEW" | "APPROVED" | "REWORK"
+  
+  // Review information
+  stagingUrl      String?
+  releaseNote     String?
+  reviewToken     String         @unique
+  readyAt         DateTime?
+  
+  // Audit Trail of Client Review
+  reviewedAt      DateTime?
+  reviewerName    String?
+  reviewerPicture String?
+  reviewerLineId  String?
+  rejectionReason String?
+  
+  // Creator
+  createdBy       String         @default("DEV") // "DEV" | "CLIENT"
+  
+  attachments     Attachment[]
+  activities      ActivityLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  fileName  String
+  fileType  String
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  action    String   // "CREATED" | "STATUS_CHANGED" | "SENT_REVIEW" | "APPROVED" | "REJECTED"
+  actor     String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model SystemSetting {
+  id                String   @id @default("default")
+  projectName       String   @default("TaskFlow")
+  defaultStagingUrl String?
+  lineChannelToken  String?
+  lineGroupId       String?
+  liffId            String?
+  adminPasscode     String   @default("admin1234")
+  updatedAt         DateTime @updatedAt
+}

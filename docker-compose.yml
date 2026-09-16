@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskflow-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      # เก็บฐานข้อมูล SQLite และไฟล์อัปโหลดไว้ไม่ให้หายเมื่อ Restart หรืออัปเดตเวอร์ชัน
+      - db_data:/app/prisma
+      - uploads_data:/app/public/uploads
+
+volumes:
+  db_data:
+    driver: local
+  uploads_data:
+    driver: local
