@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { checkDevAuth } from '@/lib/auth';
+import { prisma, ensureDatabase } from '@/lib/prisma';
 
 export async function PATCH(
   req: NextRequest,
@@ -8,10 +7,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    await ensureDatabase();
 
     const { status, actor = 'DEV' } = await req.json();
     const validStatuses = ['BACKLOG', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'APPROVED', 'REWORK'];

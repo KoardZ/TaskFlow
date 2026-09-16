@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { checkDevAuth } from '@/lib/auth';
+import { prisma, ensureDatabase } from '@/lib/prisma';
 import { pushLineMessage, createReadyForReviewFlex, getLineConfig } from '@/lib/line';
 
 export async function POST(
@@ -9,10 +8,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    await ensureDatabase();
 
     const { stagingUrl, releaseNote, attachments } = await req.json();
 

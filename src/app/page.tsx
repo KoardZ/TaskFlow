@@ -531,16 +531,21 @@ export default function DevDashboard() {
   // Delete Ticket
   const handleDeleteTicket = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่?')) return;
+    if (!confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่? (ลบแล้วจะไม่สามารถกู้คืนได้)')) return;
     try {
       const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTickets((prev) => prev.filter((t) => t.id !== id));
         fetchTickets();
       } else if (res.status === 401) {
         setShowAuthModal(true);
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการลบตั๋วงาน');
       }
     } catch (err) {
       console.error(err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 

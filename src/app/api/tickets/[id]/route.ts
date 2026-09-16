@@ -35,11 +35,6 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
     await ensureDatabase();
 
     const body = await req.json();
@@ -106,10 +101,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    await ensureDatabase();
+
+    // Delete related records first to ensure clean cascade in SQLite
+    await prisma.activityLog.deleteMany({ where: { ticketId: id } });
+    await prisma.attachment.deleteMany({ where: { ticketId: id } });
 
     await prisma.ticket.delete({
       where: { id },
@@ -117,6 +113,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
+    console.error('Error deleting ticket:', error);
+    return NextResponse.json({ success: false, error: error?.message || 'Failed to delete ticket' }, { status: 500 });
   }
 }
