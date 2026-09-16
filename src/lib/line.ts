@@ -81,9 +81,11 @@ export function createReadyForReviewFlex(ticket: {
   appUrl: string;
   liffId?: string;
 }) {
-  const reviewUrl = ticket.liffId
-    ? `https://liff.line.me/${ticket.liffId}?token=${ticket.reviewToken}`
-    : `${ticket.appUrl}/review/${ticket.reviewToken}`;
+  const cleanLiffId = ticket.liffId?.replace(/\/+$/, '').trim();
+  const cleanAppUrl = ticket.appUrl.replace(/\/+$/, '');
+  const reviewUrl = cleanLiffId
+    ? `https://liff.line.me/${cleanLiffId}/review/${ticket.reviewToken}`
+    : `${cleanAppUrl}/review/${ticket.reviewToken}`;
 
   const formattedTicketId = `TF-${String(ticket.ticketNumber).padStart(2, '0')}`;
 

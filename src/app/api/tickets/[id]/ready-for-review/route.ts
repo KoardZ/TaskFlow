@@ -70,13 +70,16 @@ export async function POST(
 
     const lineResult = await pushLineMessage([flexMessage]);
 
+    const cleanLiffId = liffId?.replace(/\/+$/, '').trim();
+    const cleanAppUrl = appUrl.replace(/\/+$/, '');
+
     return NextResponse.json({
       success: true,
       data: updated,
       lineResult,
-      reviewUrl: liffId
-        ? `https://liff.line.me/${liffId}?token=${updated.reviewToken}`
-        : `${appUrl}/review/${updated.reviewToken}`,
+      reviewUrl: cleanLiffId
+        ? `https://liff.line.me/${cleanLiffId}/review/${updated.reviewToken}`
+        : `${cleanAppUrl}/review/${updated.reviewToken}`,
     });
   } catch (error: any) {
     console.error('Error sending ready for review:', error);
