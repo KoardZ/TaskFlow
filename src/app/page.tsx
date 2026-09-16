@@ -529,9 +529,12 @@ export default function DevDashboard() {
   };
 
   // Delete Ticket
-  const handleDeleteTicket = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่? (ลบแล้วจะไม่สามารถกู้คืนได้)')) return;
+  const handleDeleteTicket = async (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!window.confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่? (ลบแล้วจะไม่สามารถกู้คืนได้)')) return;
     try {
       const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -1163,35 +1166,61 @@ export default function DevDashboard() {
                                   )}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <div
+                                  style={{ display: 'flex', gap: 4, alignItems: 'center' }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onTouchStart={(e) => e.stopPropagation()}
+                                >
                                   <button
-                                    onClick={(e) => handleOpenEditModal(ticket, e)}
+                                    type="button"
+                                    draggable={false}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenEditModal(ticket, e);
+                                    }}
                                     style={{
-                                      background: 'transparent',
-                                      border: 'none',
+                                      background: 'rgba(255, 255, 255, 0.05)',
+                                      border: '1px solid rgba(255, 255, 255, 0.1)',
                                       color: '#94A3B8',
                                       cursor: 'pointer',
-                                      padding: '3px 6px',
-                                      borderRadius: 4,
+                                      padding: '4px 7px',
+                                      borderRadius: 6,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s ease',
                                     }}
                                     title="แก้ไขข้อมูลตั๋วงาน"
                                   >
-                                    <Pencil size={13} />
+                                    <Pencil size={13} style={{ pointerEvents: 'none' }} />
                                   </button>
 
                                   <button
-                                    onClick={(e) => handleDeleteTicket(ticket.id, e)}
-                                    style={{
-                                      background: 'transparent',
-                                      border: 'none',
-                                      color: '#64748B',
-                                      cursor: 'pointer',
-                                      padding: '3px 6px',
-                                      borderRadius: 4,
+                                    type="button"
+                                    draggable={false}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTicket(ticket.id, e);
                                     }}
-                                    title="ลบตั๋ว"
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.08)',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      color: '#F87171',
+                                      cursor: 'pointer',
+                                      padding: '4px 7px',
+                                      borderRadius: 6,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title="ลบตั๋วงาน"
                                   >
-                                    <Trash2 size={13} />
+                                    <Trash2 size={13} style={{ pointerEvents: 'none' }} />
                                   </button>
                                 </div>
                               </div>
@@ -1365,17 +1394,17 @@ export default function DevDashboard() {
                               )}
                               <button
                                 onClick={(e) => handleOpenEditModal(ticket, e)}
-                                style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 4 }}
+                                style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94A3B8', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
                                 title="แก้ไขข้อมูลตั๋วงาน"
                               >
-                                <Pencil size={13} />
+                                <Pencil size={13} style={{ pointerEvents: 'none' }} />
                               </button>
                               <button
                                 onClick={(e) => handleDeleteTicket(ticket.id, e)}
-                                style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer', padding: 4 }}
-                                title="ลบตั๋ว"
+                                style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#F87171', cursor: 'pointer', padding: '4px 7px', borderRadius: 6 }}
+                                title="ลบตั๋วงาน"
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={13} style={{ pointerEvents: 'none' }} />
                               </button>
                             </div>
                           </td>
@@ -1893,7 +1922,22 @@ export default function DevDashboard() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 4, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    if (editingTicket) {
+                      handleDeleteTicket(editingTicket.id, e);
+                      setShowEditModal(false);
+                      setEditingTicket(null);
+                    }
+                  }}
+                  className="btn btn-danger"
+                  style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+                  title="ลบตั๋วงานนี้ออกจากระบบ"
+                >
+                  <Trash2 size={15} /> ลบตั๋วงาน
+                </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
