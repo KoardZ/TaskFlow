@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, ensureDatabase } from '@/lib/prisma';
 import { checkDevAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
+    await ensureDatabase();
     let setting = await prisma.systemSetting.findUnique({
       where: { id: 'default' },
     });
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest) {
     if (!isAuth) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureDatabase();
 
     const body = await req.json();
     const setting = await prisma.systemSetting.upsert({

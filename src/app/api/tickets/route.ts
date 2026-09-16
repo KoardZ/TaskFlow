@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, ensureDatabase } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
 import { pushLineMessage, createNewTicketFlex } from '@/lib/line';
 
@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (status) where.status = status;
     if (priority) where.priority = priority;
+
+    await ensureDatabase();
 
     let count = await prisma.ticket.count();
     if (count === 0) {
@@ -82,6 +84,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    await ensureDatabase();
 
     // Determine next ticket number
     const lastTicket = await prisma.ticket.findFirst({

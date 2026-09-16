@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, ensureDatabase } from '@/lib/prisma';
 import { checkDevAuth } from '@/lib/auth';
 
 export async function GET(
@@ -8,6 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    await ensureDatabase();
     const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
@@ -38,6 +39,8 @@ export async function PATCH(
     if (!isAuth) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureDatabase();
 
     const body = await req.json();
     const updateData: any = {};

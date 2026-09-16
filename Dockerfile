@@ -44,9 +44,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma schema and sqlite database directory
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-USER nextjs
+COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
