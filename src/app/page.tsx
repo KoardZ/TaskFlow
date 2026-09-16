@@ -763,49 +763,24 @@ export default function DevDashboard() {
 
           {/* สลับมุมมอง และ รีเฟรช */}
           <div className="filter-actions-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {viewMode === 'KANBAN' && (
-              isAuthenticated ? (
-                <div
-                  className="helper-drag-text"
-                  style={{
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '5px 11px',
-                    borderRadius: 8,
-                    background: 'rgba(56, 189, 248, 0.08)',
-                    border: '1px solid rgba(56, 189, 248, 0.22)',
-                    fontSize: '0.75rem',
-                    color: '#BAE6FD',
-                    fontWeight: 500,
-                  }}
-                >
-                  <Sparkles size={13} color="#38BDF8" />
-                  <span>ลากการ์ดวางข้ามคอลัมน์เพื่อเปลี่ยนสถานะ</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowAuthModal(true)}
-                  className="helper-drag-text"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '5px 11px',
-                    borderRadius: 8,
-                    background: 'rgba(235, 10, 30, 0.08)',
-                    border: '1px solid rgba(235, 10, 30, 0.25)',
-                    fontSize: '0.75rem',
-                    color: '#FDA4AF',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                  title="คลิกเพื่อใส่รหัส Dev สำหรับจัดการบอร์ด"
-                >
-                  <Lock size={12} color="#EB0A1E" />
-                  <span>โหมดดูข้อมูล (ใส่รหัส Dev เพื่อจัดการบอร์ด)</span>
-                </button>
-              )
+            {viewMode === 'KANBAN' && isAuthenticated && (
+              <div
+                className="helper-drag-text"
+                style={{
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 11px',
+                  borderRadius: 8,
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.22)',
+                  fontSize: '0.75rem',
+                  color: '#BAE6FD',
+                  fontWeight: 500,
+                }}
+              >
+                <Sparkles size={13} color="#38BDF8" />
+                <span>ลากการ์ดวางข้ามคอลัมน์เพื่อเปลี่ยนสถานะ</span>
+              </div>
             )}
 
             <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.8)', padding: 3, borderRadius: 8, border: '1px solid var(--border-card)' }}>
