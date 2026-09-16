@@ -11,13 +11,20 @@ export async function POST(
     const body = await req.json();
     const {
       action,
-      reviewerName = 'ลูกค้า',
       reviewerPicture,
       reviewerLineId,
       rejectionReason,
       reviewToken,
       attachments,
     } = body;
+
+    const reviewerName = (body.reviewerName || '').trim();
+    if (!reviewerName) {
+      return NextResponse.json(
+        { success: false, error: 'กรุณาระบุชื่อผู้ตรวจรับงาน' },
+        { status: 400 }
+      );
+    }
 
     const ticket = await prisma.ticket.findUnique({
       where: { id },

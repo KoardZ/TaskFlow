@@ -34,7 +34,7 @@ export default function ReviewPage({
   const [error, setError] = useState<string | null>(null);
 
   // Reviewer info (LIFF or fallback)
-  const [reviewerName, setReviewerName] = useState<string>('ลูกค้า');
+  const [reviewerName, setReviewerName] = useState<string>('');
   const [reviewerPicture, setReviewerPicture] = useState<string | null>(null);
   const [reviewerLineId, setReviewerLineId] = useState<string | null>(null);
   const [isLiffReady, setIsLiffReady] = useState(false);
@@ -86,7 +86,7 @@ export default function ReviewPage({
           await liff.init({ liffId });
           if (liff.isLoggedIn()) {
             const profile = await liff.getProfile();
-            setReviewerName(profile.displayName || 'ลูกค้า');
+            setReviewerName(profile.displayName || '');
             setReviewerPicture(profile.pictureUrl || null);
             setReviewerLineId(profile.userId || null);
             setIsLiffReady(true);
@@ -105,6 +105,11 @@ export default function ReviewPage({
   // Handle Approve Confirm
   const handleConfirmApprove = async () => {
     if (!ticket) return;
+    const cleanName = reviewerName.trim();
+    if (!cleanName) {
+      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนยืนยันอนุมัติ');
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -113,7 +118,7 @@ export default function ReviewPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'APPROVE',
-          reviewerName,
+          reviewerName: cleanName,
           reviewerPicture,
           reviewerLineId,
           reviewToken: token,
@@ -144,6 +149,11 @@ export default function ReviewPage({
   // Handle Reject / Request Changes (with optional screenshot attachment)
   const handleReject = async () => {
     if (!ticket) return;
+    const cleanName = reviewerName.trim();
+    if (!cleanName) {
+      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนส่งแจ้งแก้ไข');
+      return;
+    }
     if (!rejectionReason.trim()) {
       alert('กรุณาระบุจุดที่ต้องการให้ทีม Dev แก้ไขเพิ่มเติม');
       return;
@@ -176,7 +186,7 @@ export default function ReviewPage({
         body: JSON.stringify({
           action: 'REJECT',
           rejectionReason: rejectionReason.trim(),
-          reviewerName,
+          reviewerName: cleanName,
           reviewerPicture,
           reviewerLineId,
           reviewToken: token,
@@ -278,11 +288,13 @@ export default function ReviewPage({
           {reviewerPicture ? (
             <img src={reviewerPicture} alt="Avatar" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#38BDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#0B0F17', fontWeight: 800 }}>
-              {reviewerName[0] || 'T'}
+            <div style={{ width: 22, height: 22, borderRadius: '50%', background: reviewerName.trim() ? '#38BDF8' : '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#0B0F17', fontWeight: 800 }}>
+              {reviewerName.trim() ? reviewerName.trim()[0].toUpperCase() : '?'}
             </div>
           )}
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#E2E8F0' }}>{reviewerName}</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: reviewerName.trim() ? '#E2E8F0' : '#94A3B8' }}>
+            {reviewerName.trim() || 'ยังไม่ระบุชื่อ'}
+          </span>
           {isLiffReady && (
             <span title="ยืนยันตัวตนผ่าน LINE แล้ว" style={{ width: 8, height: 8, borderRadius: '50%', background: '#06C755' }} />
           )}
@@ -466,7 +478,7 @@ export default function ReviewPage({
               งานนี้ตรวจผ่านและอนุมัติเรียบร้อยแล้ว
             </h3>
             <p style={{ fontSize: '0.85rem', color: '#CBD5E1' }}>
-              อนุมัติโดย: <strong style={{ color: '#FFFFFF' }}>{ticket.reviewerName || 'ลูกค้า'}</strong> เมื่อ{' '}
+              อนุมัติโดย: <strong style={{ color: '#FFFFFF' }}>{ticket.reviewerName || 'ผู้ตรวจรับ'}</strong> เมื่อ{' '}
               {ticket.reviewedAt ? new Date(ticket.reviewedAt).toLocaleString('th-TH') : 'เรียบร้อย'}
             </p>
           </div>
@@ -514,23 +526,41 @@ export default function ReviewPage({
         ) : isReady ? (
           <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* ชื่อผู้ตรวจรับ (ถ้าไม่ได้ล็อกอินผ่าน LINE) */}
-              {!isLiffReady && (
-                <div>
-                  <label className="input-label">ชื่อผู้ตรวจรับงาน:</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={reviewerName}
-                    onChange={(e) => setReviewerName(e.target.value)}
-                    placeholder="เช่น คุณสมชาย (ฝ่ายการตลาด / TaskFlow)"
-                  />
-                </div>
-              )}
+              {/* ชื่อผู้ตรวจรับงาน (บังคับระบุ) */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: '12px 14px' }}>
+                <label className="input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ color: '#F8FAFC', fontWeight: 700 }}>ชื่อผู้ตรวจรับงาน *</span>
+                  <span style={{ fontSize: '0.725rem', color: !reviewerName.trim() ? '#EF4444' : '#10B981', fontWeight: 600 }}>
+                    {!reviewerName.trim() ? 'จำเป็นต้องระบุ' : '✓ ระบุแล้ว'}
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  value={reviewerName}
+                  onChange={(e) => setReviewerName(e.target.value)}
+                  placeholder="พิมพ์ชื่อของคุณ เช่น คุณสมชาย, แอดมินตาล"
+                  style={{
+                    borderColor: !reviewerName.trim() ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.4)',
+                  }}
+                />
+                {!reviewerName.trim() && (
+                  <p style={{ fontSize: '0.75rem', color: '#FDA4AF', marginTop: 4 }}>
+                    * กรุณาระบุชื่อผู้ตรวจรับก่อนกดยืนยันอนุมัติหรือส่งแจ้งแก้ไข
+                  </p>
+                )}
+              </div>
 
               {/* ปุ่มอนุมัติผ่านงาน */}
               <button
-                onClick={() => setShowApproveConfirm(true)}
+                onClick={() => {
+                  if (!reviewerName.trim()) {
+                    alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนกดยืนยันอนุมัติ');
+                    return;
+                  }
+                  setShowApproveConfirm(true);
+                }}
                 disabled={submitting}
                 className="btn btn-success"
                 style={{ width: '100%', padding: '15px', fontSize: '1.05rem', borderRadius: 10, fontWeight: 800 }}
@@ -541,7 +571,13 @@ export default function ReviewPage({
               {/* ปุ่มแจ้งแก้ไข */}
               {!showRejectForm ? (
                 <button
-                  onClick={() => setShowRejectForm(true)}
+                  onClick={() => {
+                    if (!reviewerName.trim()) {
+                      alert('กรุณาระบุชื่อผู้ตรวจรับงานก่อนแจ้งแก้ไข');
+                      return;
+                    }
+                    setShowRejectForm(true);
+                  }}
                   disabled={submitting}
                   className="btn btn-danger"
                   style={{ width: '100%', padding: '12px', fontSize: '0.9rem', borderRadius: 10 }}
@@ -692,9 +728,14 @@ export default function ReviewPage({
               </p>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: '#CBD5E1', textAlign: 'center', marginBottom: 20 }}>
+            <p style={{ fontSize: '0.85rem', color: '#CBD5E1', textAlign: 'center', marginBottom: 16 }}>
               ยืนยันว่าการแก้ไขบนระบบถูกต้องเรียบร้อยและพร้อมปิดงาน?
             </p>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: 8, padding: '10px 14px', marginBottom: 18, fontSize: '0.85rem' }}>
+              <div style={{ color: '#94A3B8', fontSize: '0.75rem', marginBottom: 2 }}>ลงชื่ออนุมัติโดย:</div>
+              <div style={{ color: '#F8FAFC', fontWeight: 700 }}>{reviewerName.trim()}</div>
+            </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button

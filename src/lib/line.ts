@@ -271,7 +271,7 @@ export function createApprovedFlex(ticket: {
         contents: [
           {
             type: 'text',
-            text: `ลูกค้า (${ticket.reviewerName || 'ผู้ตรวจรับ'}) ได้ตรวจสอบและอนุมัติงานเรียบร้อยแล้ว`,
+            text: `${ticket.reviewerName || 'ผู้ตรวจรับ'} ได้ตรวจสอบและอนุมัติงานเรียบร้อยแล้ว`,
             size: 'sm',
             color: '#0F172A',
             wrap: true,
@@ -335,7 +335,7 @@ export function createReworkFlex(ticket: {
         contents: [
           {
             type: 'text',
-            text: `ผู้ส่งข้อคิดเห็น: ${ticket.reviewerName || 'ลูกค้า'}`,
+            text: `ผู้ส่งข้อคิดเห็น: ${ticket.reviewerName || 'ผู้ตรวจรับ'}`,
             size: 'xs',
             color: '#64748B',
             weight: 'bold',
