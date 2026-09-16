@@ -15,45 +15,7 @@ export async function GET(req: NextRequest) {
 
     await ensureDatabase();
 
-    let count = await prisma.ticket.count();
-    if (count === 0) {
-      // Auto seed sample tickets
-      await prisma.ticket.createMany({
-        data: [
-          {
-            ticketNumber: 1,
-            title: 'ปรับขนาดฟอนต์หัวข้อและสีปุ่มกดในหน้า Checkout ให้ตรงตาม CI',
-            description: 'ลูกค้าแจ้งในการประชุมเมื่อวานว่า สีปุ่มยังเป็นสีเทา อยากให้ปรับเป็นสีเขียวมรกต และขยายขนาดฟอนต์บนมือถือ',
-            priority: 'HIGH',
-            status: 'BACKLOG',
-            reviewToken: randomUUID(),
-            createdBy: 'DEV',
-          },
-          {
-            ticketNumber: 2,
-            title: 'แก้ปัญหาการคำนวณส่วนลดคูปองผิดพลาดเมื่อยอดสั่งซื้อมีเศษสตางค์',
-            description: 'พบเคสที่ลูกค้ากรอกคูปอง 10% แล้วระบบปัดเศษทศนิยมทำให้ยอดรวมคลาดเคลื่อน 1 บาท',
-            priority: 'URGENT',
-            status: 'IN_PROGRESS',
-            stagingUrl: 'https://staging.example.com/checkout',
-            reviewToken: randomUUID(),
-            createdBy: 'CLIENT',
-          },
-          {
-            ticketNumber: 3,
-            title: 'ปรับปรุงการแสดงผลหน้าประวัติการสั่งซื้อบนมือถือ (Mobile Responsive)',
-            description: 'แก้ไขตารางให้กลายเป็น Card view บนหน้าจอขนาดเล็กกว่า 768px เพื่อให้อ่านง่ายขึ้น',
-            priority: 'MEDIUM',
-            status: 'READY_FOR_REVIEW',
-            stagingUrl: 'https://staging.example.com/orders',
-            releaseNote: 'ปรับ UI ตารางให้เป็น Responsive Card พร้อมแสดงสถานะการจัดส่งสีสันชัดเจนแล้วครับ',
-            reviewToken: randomUUID(),
-            readyAt: new Date(),
-            createdBy: 'DEV',
-          },
-        ],
-      });
-    }
+
 
     const tickets = await prisma.ticket.findMany({
       where,
