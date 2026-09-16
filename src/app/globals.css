@@ -637,6 +637,23 @@ body {
   display: flex;
 }
 
+/* Filter Bar Controls */
+.filter-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  max-width: 640px;
+}
+
+.search-box-wrapper {
+  position: relative;
+  flex: 1 1 340px;
+  min-width: 220px;
+  max-width: 520px;
+  width: 100%;
+}
+
 /* Dashboard Page Container */
 .app-dashboard-container {
   height: 100vh;
@@ -738,14 +755,6 @@ body {
   .metric-number {
     font-size: 1.2rem !important;
   }
-
-/* Filter Bar Search Box */
-.search-box-wrapper {
-  position: relative;
-  flex: 1 1 240px;
-  min-width: 160px;
-  width: 100%;
-}
 
 /* Filter Bar Mobile */
   .filter-bar-inner {
