@@ -27,15 +27,15 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        projectName: setting.projectName,
-        defaultStagingUrl: setting.defaultStagingUrl,
-        liffId: setting.liffId,
-        lineGroupId: setting.lineGroupId,
-        hasLineToken: !!setting.lineChannelToken,
+        projectName: process.env.PROJECT_NAME || setting.projectName,
+        defaultStagingUrl: process.env.DEFAULT_STAGING_URL || setting.defaultStagingUrl,
+        liffId: process.env.NEXT_PUBLIC_LIFF_ID || setting.liffId,
+        lineGroupId: process.env.LINE_GROUP_ID || setting.lineGroupId,
+        hasLineToken: !!(process.env.LINE_CHANNEL_ACCESS_TOKEN || setting.lineChannelToken),
         ...(isAuth
           ? {
-              lineChannelToken: setting.lineChannelToken,
-              adminPasscode: setting.adminPasscode,
+              lineChannelToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || setting.lineChannelToken,
+              adminPasscode: process.env.ADMIN_PASSCODE || setting.adminPasscode,
             }
           : {}),
       },

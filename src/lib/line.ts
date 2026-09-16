@@ -7,18 +7,28 @@ interface SendLineResult {
   payload?: any;
 }
 
-// Helper to get active LINE settings from DB or .env
+// Helper to get active LINE settings from .env or DB
 export async function getLineConfig() {
+  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
+  const groupId = process.env.LINE_GROUP_ID || '';
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  if (token && groupId) {
+    return { token, groupId, liffId, appUrl };
+  }
+
+  // Fallback to database if .env is not yet set
   const setting = await prisma.systemSetting.findUnique({
     where: { id: 'default' },
   });
 
-  const token = setting?.lineChannelToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
-  const groupId = setting?.lineGroupId || process.env.LINE_GROUP_ID || '';
-  const liffId = setting?.liffId || process.env.NEXT_PUBLIC_LIFF_ID || '';
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-  return { token, groupId, liffId, appUrl };
+  return {
+    token: token || setting?.lineChannelToken || '',
+    groupId: groupId || setting?.lineGroupId || '',
+    liffId: liffId || setting?.liffId || '',
+    appUrl,
+  };
 }
 
 // Send Flex Message via LINE Messaging API Push

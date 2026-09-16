@@ -12,7 +12,7 @@ export async function checkDevAuth(): Promise<boolean> {
     where: { id: 'default' },
   });
 
-  const correctPasscode = setting?.adminPasscode || process.env.ADMIN_PASSCODE || 'admin1234';
+  const correctPasscode = process.env.ADMIN_PASSCODE || setting?.adminPasscode || 'admin1234';
   const validTokens = [
     Buffer.from(correctPasscode).toString('base64'),
     Buffer.from('1234').toString('base64'),
@@ -26,7 +26,7 @@ export async function setDevAuthCookie(passcode: string): Promise<boolean> {
     where: { id: 'default' },
   });
 
-  const correctPasscode = setting?.adminPasscode || process.env.ADMIN_PASSCODE || 'admin1234';
+  const correctPasscode = process.env.ADMIN_PASSCODE || setting?.adminPasscode || 'admin1234';
 
   if (passcode === correctPasscode || passcode === '1234' || passcode === 'admin1234') {
     const cookieStore = await cookies();

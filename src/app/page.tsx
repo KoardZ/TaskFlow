@@ -5,7 +5,6 @@ import { TicketItem, TicketStatus, Priority } from '@/lib/types';
 import {
   Plus,
   Search,
-  Settings,
   ExternalLink,
   MessageSquare,
   Clock,
@@ -104,7 +103,6 @@ export default function DevDashboard() {
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [showReadyModal, setShowReadyModal] = useState(false);
   const [selectedTicketForReady, setSelectedTicketForReady] = useState<TicketItem | null>(null);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showSimulatorModal, setShowSimulatorModal] = useState(false);
   const [lastFlexPayload, setLastFlexPayload] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -445,29 +443,6 @@ export default function DevDashboard() {
     }
   };
 
-  // Save Settings
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settingsData),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setShowSettingsModal(false);
-        alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว');
-      } else if (res.status === 401) {
-        setShowAuthModal(true);
-      } else {
-        alert(data.error || 'บันทึกการตั้งค่าไม่สำเร็จ');
-      }
-    } catch (err) {
-      alert('เกิดข้อผิดพลาดในการบันทึก');
-    }
-  };
-
   // Open Edit Ticket Modal
   const handleOpenEditModal = (ticket: TicketItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -649,15 +624,6 @@ export default function DevDashboard() {
               style={{ fontSize: '0.825rem', padding: '7px 14px' }}
             >
               <Plus size={16} /> <span className="nav-action-text">สร้างตั๋วงาน</span>
-            </button>
-
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="btn btn-secondary"
-              title="ตั้งค่าระบบ & เชื่อมต่อ LINE"
-              style={{ padding: '8px' }}
-            >
-              <Settings size={17} />
             </button>
 
             {isAuthenticated ? (
@@ -2235,105 +2201,7 @@ export default function DevDashboard() {
         </div>
       )}
 
-      {/* 9. Modal: ตั้งค่าระบบ & LINE */}
-      {showSettingsModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Settings size={20} color="#EB0A1E" />
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>ตั้งค่าระบบ & เชื่อมต่อ LINE</h2>
-              </div>
-              <button onClick={() => setShowSettingsModal(false)} className="btn btn-secondary" style={{ padding: '4px 8px' }}>
-                <X size={16} />
-              </button>
-            </div>
 
-            <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label className="input-label">ชื่อโปรเจกต์:</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={settingsData.projectName}
-                  onChange={(e) => setSettingsData({ ...settingsData, projectName: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="input-label">ลิงก์ทดสอบระบบเริ่มต้น (Default URL):</label>
-                <input
-                  type="url"
-                  className="input-field"
-                  placeholder="https://example.com"
-                  value={settingsData.defaultStagingUrl || ''}
-                  onChange={(e) => setSettingsData({ ...settingsData, defaultStagingUrl: e.target.value })}
-                />
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 14 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#06C755', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Smartphone size={16} /> ตั้งค่า LINE Developers:
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>
-                    <label className="input-label">LINE Channel Access Token:</label>
-                    <input
-                      type="password"
-                      className="input-field"
-                      placeholder="ใส่ Channel Access Token สำหรับส่ง Push Message"
-                      value={settingsData.lineChannelToken || ''}
-                      onChange={(e) => setSettingsData({ ...settingsData, lineChannelToken: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="input-label">LINE Group ID (กลุ่มลูกค้าที่จะให้ส่งแจ้งเตือนเข้า):</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="เช่น C1234567890abcdef..."
-                      value={settingsData.lineGroupId || ''}
-                      onChange={(e) => setSettingsData({ ...settingsData, lineGroupId: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="input-label">LINE LIFF ID (สำหรับเปิดหน้าตรวจงานในแอป LINE):</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="เช่น 165xxxxxxx-xxxxxxx"
-                      value={settingsData.liffId || ''}
-                      onChange={(e) => setSettingsData({ ...settingsData, liffId: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 14 }}>
-                <label className="input-label">รหัสผ่าน Dev Admin Passcode:</label>
-                <input
-                  type="password"
-                  className="input-field"
-                  value={settingsData.adminPasscode || ''}
-                  onChange={(e) => setSettingsData({ ...settingsData, adminPasscode: e.target.value })}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-                <button type="submit" className="btn btn-taskflow" style={{ flex: 1, padding: '11px' }}>
-                  บันทึกการตั้งค่า
-                </button>
-                <button type="button" onClick={() => setShowSettingsModal(false)} className="btn btn-secondary">
-                  ปิด
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* 10. Modal: ปลดล็อก Dev Passcode */}
       {showAuthModal && (
