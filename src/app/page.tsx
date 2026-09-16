@@ -565,9 +565,8 @@ export default function DevDashboard() {
     const ready = tickets.filter((t) => t.status === 'READY_FOR_REVIEW').length;
     const approved = tickets.filter((t) => t.status === 'APPROVED').length;
     const rework = tickets.filter((t) => t.status === 'REWORK').length;
-    const passRate = total > 0 ? Math.round((approved / total) * 100) : 0;
 
-    return { total, ready, approved, rework, passRate };
+    return { total, ready, approved, rework };
   }, [tickets]);
 
   return (
@@ -695,16 +694,10 @@ export default function DevDashboard() {
 
           {/* Card 3: ตรวจผ่านแล้ว */}
           <div className="glass-panel metric-card-inner" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ flex: 1, marginRight: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span style={{ fontSize: '0.725rem', color: '#6EE7B7', fontWeight: 600 }}>ตรวจผ่านแล้ว</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10B981' }}>{stats.passRate}% สำเร็จ</span>
-              </div>
-              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2 }}>
+            <div>
+              <span style={{ fontSize: '0.725rem', color: '#6EE7B7', fontWeight: 600 }}>ตรวจผ่านแล้ว</span>
+              <div className="metric-number" style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.2, marginTop: 2 }}>
                 {stats.approved} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748B' }}>รายการ</span>
-              </div>
-              <div style={{ width: '100%', height: 4, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 99, marginTop: 4, overflow: 'hidden' }}>
-                <div style={{ width: `${stats.passRate}%`, height: '100%', background: '#10B981', borderRadius: 99 }} />
               </div>
             </div>
             <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
