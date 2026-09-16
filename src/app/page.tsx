@@ -37,6 +37,8 @@ import {
   GripVertical,
   ArrowRightLeft,
   ArrowRight,
+  Calendar,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
@@ -119,6 +121,9 @@ export default function DevDashboard() {
 
   // Lightbox modal for previewing images
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+
+  // Ticket Detail modal state
+  const [selectedTicketForDetail, setSelectedTicketForDetail] = useState<TicketItem | null>(null);
 
   // Responsive & Quick Move state for Mobile/Tablet
   const [activeMobileCol, setActiveMobileCol] = useState<TicketStatus>('BACKLOG');
@@ -586,6 +591,12 @@ export default function DevDashboard() {
     return { total, ready, approved, rework };
   }, [tickets]);
 
+  // Synchronize currentDetailTicket with latest ticket state
+  const currentDetailTicket = useMemo(() => {
+    if (!selectedTicketForDetail) return null;
+    return tickets.find((t) => t.id === selectedTicketForDetail.id) || selectedTicketForDetail;
+  }, [selectedTicketForDetail, tickets]);
+
   return (
     <div className="app-dashboard-container">
       {/* 1. Header Bar */}
@@ -958,6 +969,7 @@ export default function DevDashboard() {
                             <div
                               key={ticket.id}
                               draggable={isAuthenticated}
+                              onClick={() => setSelectedTicketForDetail(ticket)}
                               onDragStart={(e) => {
                                 if (!isAuthenticated) {
                                   e.preventDefault();
@@ -983,7 +995,8 @@ export default function DevDashboard() {
                                   ? 'rework'
                                   : ''
                               }`}
-                              style={{ flexShrink: 0 }}
+                              style={{ flexShrink: 0, cursor: 'pointer' }}
+                              title="คลิกเพื่อดูรายละเอียดตั๋วงาน"
                             >
                               {/* หัวการ์ด: รหัส & Drag Grip */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1036,7 +1049,10 @@ export default function DevDashboard() {
                                     <button
                                       key={att.id}
                                       type="button"
-                                      onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewImage({ url: att.fileUrl, name: att.fileName });
+                                      }}
                                       style={{
                                         border: '1px solid rgba(255, 255, 255, 0.15)',
                                         borderRadius: 6,
@@ -1315,7 +1331,12 @@ export default function DevDashboard() {
                       const formattedTicketId = `TF-${String(ticket.ticketNumber).padStart(2, '0')}`;
 
                       return (
-                        <tr key={ticket.id}>
+                        <tr
+                          key={ticket.id}
+                          onClick={() => setSelectedTicketForDetail(ticket)}
+                          style={{ cursor: 'pointer' }}
+                          title="คลิกเพื่อดูรายละเอียดตั๋วงาน"
+                        >
                           <td>
                             <span className="ticket-tag" style={{ color: '#38BDF8' }}>
                               {formattedTicketId}
@@ -1346,7 +1367,8 @@ export default function DevDashboard() {
                           <td style={{ textAlign: 'center' }}>
                             {ticket.attachments && ticket.attachments.length > 0 ? (
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   const first = ticket.attachments?.[0];
                                   if (first) setPreviewImage({ url: first.fileUrl, name: first.fileName });
                                 }}
@@ -1366,6 +1388,7 @@ export default function DevDashboard() {
                                 href={ticket.stagingUrl}
                                 target="_blank"
                                 rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 style={{ color: '#38BDF8', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.775rem', textDecoration: 'none' }}
                               >
                                 <span>เปิดทดสอบ</span>
@@ -2282,6 +2305,415 @@ export default function DevDashboard() {
                 style={{ width: '100%', padding: '9px 16px', fontSize: '0.825rem' }}
               >
                 ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 12. Modal: ดูรายละเอียดตั๋วงาน (Ticket Detail Modal) */}
+      {currentDetailTicket && (
+        <div className="modal-overlay" onClick={() => setSelectedTicketForDetail(null)}>
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: 680,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: 0,
+              background: '#0F172A',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.7)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '16px 22px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(15, 23, 42, 0.95)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span
+                  className="ticket-tag"
+                  style={{
+                    color: '#38BDF8',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                    background: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                  }}
+                >
+                  TF-{String(currentDetailTicket.ticketNumber).padStart(2, '0')}
+                </span>
+
+                <span
+                  className={`badge badge-${currentDetailTicket.status.toLowerCase().replace(/_/g, '')}`}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                >
+                  {currentDetailTicket.status === 'READY_FOR_REVIEW' && 'รอตรวจรับ'}
+                  {currentDetailTicket.status === 'APPROVED' && 'ตรวจผ่านแล้ว'}
+                  {currentDetailTicket.status === 'REWORK' && 'แจ้งแก้ไข'}
+                  {currentDetailTicket.status === 'IN_PROGRESS' && 'กำลังทำ'}
+                  {currentDetailTicket.status === 'BACKLOG' && 'รอดำเนินการ'}
+                </span>
+
+                <span style={{ fontSize: '0.75rem', color: currentDetailTicket.createdBy === 'CLIENT' ? '#38BDF8' : '#94A3B8' }}>
+                  เปิดโดย: <strong>{currentDetailTicket.createdBy === 'CLIENT' ? 'ลูกค้า' : 'ทีม Dev'}</strong>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTicketForDetail(null)}
+                className="btn btn-ghost"
+                style={{ padding: '6px', color: '#94A3B8' }}
+                title="ปิดหน้าต่าง"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* ชื่องาน */}
+              <div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.45, margin: 0 }}>
+                  {currentDetailTicket.title}
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8, fontSize: '0.75rem', color: '#64748B', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Calendar size={13} /> สร้างเมื่อ {new Date(currentDetailTicket.createdAt).toLocaleString('th-TH')}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Clock size={13} /> อัปเดตล่าสุด {new Date(currentDetailTicket.updatedAt).toLocaleString('th-TH')}
+                  </span>
+                </div>
+              </div>
+
+              {/* รายละเอียดคำอธิบายงาน */}
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ClipboardList size={15} color="#38BDF8" /> รายละเอียดงาน
+                </div>
+                <div
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                    fontSize: '0.875rem',
+                    color: '#E2E8F0',
+                    lineHeight: 1.65,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {currentDetailTicket.description}
+                </div>
+              </div>
+
+              {/* ลิงก์ทดสอบระบบ (Staging URL) */}
+              {currentDetailTicket.stagingUrl && (
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ExternalLink size={15} color="#38BDF8" /> ลิงก์ทดสอบระบบ
+                  </div>
+                  <a
+                    href={currentDetailTicket.stagingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '9px 14px',
+                      borderRadius: 8,
+                      background: 'rgba(56, 189, 248, 0.08)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      color: '#38BDF8',
+                      fontSize: '0.825rem',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>{currentDetailTicket.stagingUrl}</span>
+                    <ArrowUpRight size={14} />
+                  </a>
+                </div>
+              )}
+
+              {/* รูปภาพแนบ (Gallery) */}
+              {currentDetailTicket.attachments && currentDetailTicket.attachments.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ImageIcon size={15} color="#38BDF8" /> รูปภาพแนบ ({currentDetailTicket.attachments.length} รูป)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
+                    {currentDetailTicket.attachments.map((att) => (
+                      <button
+                        key={att.id}
+                        type="button"
+                        onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
+                        style={{
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          background: '#000000',
+                          padding: 0,
+                          cursor: 'pointer',
+                          position: 'relative',
+                          aspectRatio: '1',
+                          display: 'block',
+                        }}
+                        title={`คลิกเพื่อดูรูปเต็ม: ${att.fileName}`}
+                      >
+                        <img
+                          src={att.fileUrl}
+                          alt={att.fileName}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            padding: '4px 6px',
+                            background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                            fontSize: '0.65rem',
+                            color: '#FFFFFF',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'left',
+                          }}
+                        >
+                          {att.fileName}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* กล่องสถานะพิเศษ: รอตรวจรับงาน (READY_FOR_REVIEW) */}
+              {currentDetailTicket.status === 'READY_FOR_REVIEW' && (
+                <div
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.08)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ color: '#FCD34D', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ShieldAlert size={16} color="#F59E0B" /> สิ่งที่ทีม Dev แก้ไข (Release Note):
+                    </div>
+                    <Link
+                      href={`/review/${currentDetailTicket.reviewToken}`}
+                      target="_blank"
+                      className="btn btn-line"
+                      style={{ padding: '5px 12px', fontSize: '0.775rem' }}
+                    >
+                      <Eye size={13} /> เปิดหน้าตรวจรับงาน
+                    </Link>
+                  </div>
+                  <div style={{ color: '#FEF3C7', fontSize: '0.85rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {currentDetailTicket.releaseNote || 'ทีม Dev ได้แก้ไขและนำขึ้นระบบเรียบร้อยแล้ว'}
+                  </div>
+                </div>
+              )}
+
+              {/* กล่องสถานะพิเศษ: ตรวจผ่านแล้ว (APPROVED) */}
+              {currentDetailTicket.status === 'APPROVED' && (
+                <div
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: '#34D399', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={16} color="#10B981" /> ตรวจผ่านแล้ว (อนุมัติงานเรียบร้อย)
+                    </div>
+                    {currentDetailTicket.reviewerName && (
+                      <div style={{ color: '#A7F3D0', fontSize: '0.8rem', marginTop: 4 }}>
+                        อนุมัติโดย: <strong>{currentDetailTicket.reviewerName}</strong>
+                        {currentDetailTicket.reviewedAt && (
+                          <span style={{ color: '#6EE7B7', marginLeft: 8 }}>
+                            ({new Date(currentDetailTicket.reviewedAt).toLocaleString('th-TH')})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Link
+                    href={`/review/${currentDetailTicket.reviewToken}`}
+                    target="_blank"
+                    className="btn btn-secondary"
+                    style={{ padding: '5px 12px', fontSize: '0.775rem', color: '#6EE7B7', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                  >
+                    <Eye size={13} /> ดูใบรับงาน
+                  </Link>
+                </div>
+              )}
+
+              {/* กล่องสถานะพิเศษ: แจ้งแก้ไข (REWORK) */}
+              {currentDetailTicket.status === 'REWORK' && (
+                <div
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ color: '#F87171', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <RotateCcw size={16} color="#EF4444" /> จุดที่ต้องแก้ไขเพิ่มเติม:
+                    </div>
+                    <Link
+                      href={`/review/${currentDetailTicket.reviewToken}`}
+                      target="_blank"
+                      className="btn btn-secondary"
+                      style={{ padding: '5px 12px', fontSize: '0.775rem', color: '#FDA4AF', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    >
+                      <Eye size={13} /> ดูคอมเมนต์
+                    </Link>
+                  </div>
+                  <div style={{ color: '#FECDD3', fontSize: '0.85rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    &ldquo;{currentDetailTicket.rejectionReason || 'มีการแจ้งแก้ไขเพิ่มเติม'}&rdquo;
+                  </div>
+                </div>
+              )}
+
+              {/* ประวัติการทำงาน (Timeline) */}
+              {currentDetailTicket.activities && currentDetailTicket.activities.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <History size={15} color="#38BDF8" /> ประวัติการทำงาน ({currentDetailTicket.activities.length} รายการ)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 8, borderLeft: '2px solid rgba(255, 255, 255, 0.1)' }}>
+                    {currentDetailTicket.activities.map((act) => (
+                      <div key={act.id} style={{ position: 'relative', paddingLeft: 14 }}>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: -13,
+                            top: 6,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background:
+                              act.action === 'APPROVED'
+                                ? '#10B981'
+                                : act.action === 'REJECTED'
+                                ? '#EF4444'
+                                : act.action === 'SENT_REVIEW'
+                                ? '#F59E0B'
+                                : '#38BDF8',
+                          }}
+                        />
+                        <div style={{ fontSize: '0.775rem', color: '#F1F5F9' }}>
+                          <span style={{ fontWeight: 600, color: '#BAE6FD' }}>{act.actor}</span>: {act.details || act.action}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: 2 }}>
+                          {new Date(act.createdAt).toLocaleString('th-TH')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div
+              style={{
+                padding: '14px 22px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(11, 15, 23, 0.85)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {isAuthenticated && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = currentDetailTicket;
+                        setSelectedTicketForDetail(null);
+                        setQuickMoveTicket(target);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.3)' }}
+                    >
+                      <ArrowRightLeft size={13} /> ย้ายสถานะ
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = currentDetailTicket;
+                        setSelectedTicketForDetail(null);
+                        handleOpenEditModal(target);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ padding: '7px 12px', fontSize: '0.775rem' }}
+                    >
+                      <Pencil size={13} /> แก้ไข
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = currentDetailTicket;
+                        setSelectedTicketForDetail(null);
+                        handleDeleteTicket(target.id);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    >
+                      <Trash2 size={13} /> ลบ
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTicketForDetail(null)}
+                className="btn btn-secondary"
+                style={{ padding: '7px 16px', fontSize: '0.8rem' }}
+              >
+                ปิดหน้าต่าง
               </button>
             </div>
           </div>
