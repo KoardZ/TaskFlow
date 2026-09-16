@@ -733,7 +733,7 @@ export default function DevDashboard() {
           {/* ค้นหาและตัวกรอง */}
           <div className="filter-controls-group" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 260, maxWidth: 840 }}>
             {/* ค้นหา */}
-            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 160, width: '100%' }}>
+            <div className="search-box-wrapper">
               <Search size={15} color="#64748B" style={{ position: 'absolute', left: 12, top: 11 }} />
               <input
                 type="text"

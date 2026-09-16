@@ -739,7 +739,15 @@ body {
     font-size: 1.2rem !important;
   }
 
-  /* Filter Bar */
+/* Filter Bar Search Box */
+.search-box-wrapper {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 160px;
+  width: 100%;
+}
+
+/* Filter Bar Mobile */
   .filter-bar-inner {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -749,11 +757,18 @@ body {
     flex-direction: column !important;
     max-width: 100% !important;
     width: 100% !important;
+    flex: none !important;
+    gap: 8px !important;
+  }
+  .search-box-wrapper {
+    flex: none !important;
+    width: 100% !important;
   }
   .filter-selects-row {
     display: flex;
     gap: 8px;
     width: 100%;
+    flex: none !important;
   }
   .filter-selects-row select {
     flex: 1 !important;
@@ -765,6 +780,7 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    flex: none !important;
   }
 
   /* Kanban Grid on Mobile */
