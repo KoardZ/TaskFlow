@@ -146,7 +146,7 @@ export default function DevDashboard() {
     lineChannelToken: '',
     lineGroupId: '',
     liffId: '',
-    adminPasscode: 'admin1234',
+    adminPasscode: '',
   });
 
   // Fetch Tickets
@@ -2190,7 +2190,7 @@ export default function DevDashboard() {
                 type="password"
                 required
                 className="input-field"
-                placeholder="กรอกรหัสผ่าน (ค่าเริ่มต้น: admin1234)"
+                placeholder="กรอกรหัสผ่าน"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 autoFocus
