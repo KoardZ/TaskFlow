@@ -2647,75 +2647,62 @@ export default function DevDashboard() {
               )}
             </div>
 
-            {/* Footer Actions */}
-            <div
-              style={{
-                padding: '14px 22px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                background: 'rgba(11, 15, 23, 0.85)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 10,
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {isAuthenticated && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = currentDetailTicket;
-                        setSelectedTicketForDetail(null);
-                        setQuickMoveTicket(target);
-                      }}
-                      className="btn btn-secondary"
-                      style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.3)' }}
-                    >
-                      <ArrowRightLeft size={13} /> ย้ายสถานะ
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = currentDetailTicket;
-                        setSelectedTicketForDetail(null);
-                        handleOpenEditModal(target);
-                      }}
-                      className="btn btn-secondary"
-                      style={{ padding: '7px 12px', fontSize: '0.775rem' }}
-                    >
-                      <Pencil size={13} /> แก้ไข
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = currentDetailTicket;
-                        setSelectedTicketForDetail(null);
-                        handleDeleteTicket(target.id);
-                      }}
-                      className="btn btn-secondary"
-                      style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                    >
-                      <Trash2 size={13} /> ลบ
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedTicketForDetail(null)}
-                className="btn btn-secondary"
-                style={{ padding: '7px 16px', fontSize: '0.8rem' }}
+            {/* Footer Actions (เฉพาะตอนล็อกอิน Dev) */}
+            {isAuthenticated && (
+              <div
+                style={{
+                  padding: '14px 22px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(11, 15, 23, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: 8,
+                  position: 'sticky',
+                  bottom: 0,
+                  zIndex: 10,
+                }}
               >
-                ปิดหน้าต่าง
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = currentDetailTicket;
+                    setSelectedTicketForDetail(null);
+                    setQuickMoveTicket(target);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.3)' }}
+                >
+                  <ArrowRightLeft size={13} /> ย้ายสถานะ
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = currentDetailTicket;
+                    setSelectedTicketForDetail(null);
+                    handleOpenEditModal(target);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ padding: '7px 12px', fontSize: '0.775rem' }}
+                >
+                  <Pencil size={13} /> แก้ไข
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = currentDetailTicket;
+                    setSelectedTicketForDetail(null);
+                    handleDeleteTicket(target.id);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                >
+                  <Trash2 size={13} /> ลบ
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
