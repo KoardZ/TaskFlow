@@ -189,6 +189,16 @@ export default function DevDashboard() {
   };
 
   useEffect(() => {
+    // Auto redirect to /review/[token] if ?token=... is present in URL (e.g. from LINE LIFF)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        window.location.replace(`/review/${token}`);
+        return;
+      }
+    }
+
     fetchTickets();
     checkAuthAndSettings();
   }, []);
@@ -586,7 +596,7 @@ export default function DevDashboard() {
   }, [tickets]);
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-dashboard-container">
       {/* 1. Header Bar */}
       <nav className="glass-nav" style={{ padding: '10px 24px', flexShrink: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1680, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
@@ -859,7 +869,7 @@ export default function DevDashboard() {
       </div>
 
       {/* 4. พื้นที่แสดงผล: มุมมองบอร์ด หรือ มุมมองตาราง */}
-      <main style={{ flex: 1, minHeight: 0, padding: '10px 16px 14px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <main className="main-content-area">
         <div style={{ maxWidth: 1680, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {viewMode === 'KANBAN' ? (
             /* KANBAN VIEW */
