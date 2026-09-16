@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { TicketItem, TicketStatus, Priority } from '@/lib/types';
+import { TicketItem, TicketStatus } from '@/lib/types';
 import {
   Plus,
   Search,
@@ -91,8 +91,6 @@ export default function DevDashboard() {
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
-  const [creatorFilter, setCreatorFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'KANBAN' | 'TABLE'>('KANBAN');
 
   // Drag and Drop state
@@ -114,7 +112,6 @@ export default function DevDashboard() {
   const [editingTicket, setEditingTicket] = useState<TicketItem | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editPriority, setEditPriority] = useState<Priority>('MEDIUM');
   const [editStagingUrl, setEditStagingUrl] = useState('');
   const [editDeletedAttachmentIds, setEditDeletedAttachmentIds] = useState<string[]>([]);
   const [editNewFiles, setEditNewFiles] = useState<{ id: string; file: File; preview: string; name: string }[]>([]);
@@ -130,7 +127,6 @@ export default function DevDashboard() {
   // New ticket form
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newPriority, setNewPriority] = useState<Priority>('MEDIUM');
   const [newStagingUrl, setNewStagingUrl] = useState('');
   const [newTicketFile, setNewTicketFile] = useState<File | null>(null);
   const [newTicketPreviewUrl, setNewTicketPreviewUrl] = useState<string | null>(null);
@@ -310,7 +306,7 @@ export default function DevDashboard() {
         body: JSON.stringify({
           title: newTitle,
           description: newDescription,
-          priority: newPriority,
+          priority: 'MEDIUM',
           stagingUrl: newStagingUrl || settingsData.defaultStagingUrl,
           createdBy: 'DEV',
           attachments,
@@ -449,7 +445,6 @@ export default function DevDashboard() {
     setEditingTicket(ticket);
     setEditTitle(ticket.title);
     setEditDescription(ticket.description);
-    setEditPriority(ticket.priority as Priority);
     setEditStagingUrl(ticket.stagingUrl || '');
     setEditDeletedAttachmentIds([]);
     setEditNewFiles([]);
@@ -493,7 +488,6 @@ export default function DevDashboard() {
         body: JSON.stringify({
           title: editTitle.trim(),
           description: editDescription.trim(),
-          priority: editPriority,
           stagingUrl: editStagingUrl.trim(),
           deletedAttachmentIds: editDeletedAttachmentIds,
           newAttachments,
@@ -553,11 +547,9 @@ export default function DevDashboard() {
         t.description.toLowerCase().includes(search.toLowerCase()) ||
         rawNum.includes(search) ||
         formattedNum.toLowerCase().includes(search.toLowerCase());
-      const matchPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
-      const matchCreator = creatorFilter === 'ALL' || t.createdBy === creatorFilter;
-      return matchSearch && matchPriority && matchCreator;
+      return matchSearch;
     });
-  }, [tickets, search, priorityFilter, creatorFilter]);
+  }, [tickets, search]);
 
   // Metric Stats - ALL UNITS CONSISTENTLY IN THAI: "รายการ"
   const stats = useMemo(() => {
@@ -607,16 +599,6 @@ export default function DevDashboard() {
 
           {/* Quick Action Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link
-              href="/submit"
-              target="_blank"
-              className="btn btn-secondary"
-              title="เปิดฟอร์มสำหรับลูกค้าเพื่อแจ้งคอมเมนต์หรือเปิดตั๋วใหม่"
-              style={{ fontSize: '0.8rem', padding: '7px 12px' }}
-            >
-              <Smartphone size={15} color="#38BDF8" /> <span className="nav-action-text">ฟอร์มลูกค้าแจ้งเรื่อง</span>
-            </Link>
-
             <button
               onClick={() => setShowNewTicketModal(true)}
               className="btn btn-taskflow"
@@ -744,35 +726,6 @@ export default function DevDashboard() {
                   <X size={14} />
                 </button>
               )}
-            </div>
-
-            {/* แถวดรอปดาวน์สำหรับฟิลเตอร์ */}
-            <div className="filter-selects-row">
-              {/* กรองความสำคัญ */}
-              <select
-                className="select-field"
-                style={{ minWidth: 160, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-              >
-                <option value="ALL">ความสำคัญ: ทั้งหมด</option>
-                <option value="URGENT">🔴 เร่งด่วน</option>
-                <option value="HIGH">🟠 สูง</option>
-                <option value="MEDIUM">🔵 ปานกลาง</option>
-                <option value="LOW">⚪ ทั่วไป</option>
-              </select>
-
-              {/* กรองผู้เปิด */}
-              <select
-                className="select-field"
-                style={{ minWidth: 150, height: 38, padding: '0 28px 0 12px', fontSize: '0.82rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                value={creatorFilter}
-                onChange={(e) => setCreatorFilter(e.target.value)}
-              >
-                <option value="ALL">ผู้เปิด: ทั้งหมด</option>
-                <option value="CLIENT">ลูกค้า (Client)</option>
-                <option value="DEV">ทีม Dev</option>
-              </select>
             </div>
           </div>
 
@@ -963,16 +916,7 @@ export default function DevDashboard() {
                         </div>
                       ) : (
                         colTickets.map((ticket) => {
-                          const priorityClass = `badge-priority-${ticket.priority.toLowerCase()}`;
                           const formattedTicketId = `TF-${String(ticket.ticketNumber).padStart(2, '0')}`;
-                          const priorityLabel =
-                            ticket.priority === 'URGENT'
-                              ? 'เร่งด่วน'
-                              : ticket.priority === 'HIGH'
-                              ? 'สูง'
-                              : ticket.priority === 'MEDIUM'
-                              ? 'ปานกลาง'
-                              : 'ทั่วไป';
 
                           return (
                             <div
@@ -1000,16 +944,11 @@ export default function DevDashboard() {
                               }`}
                               style={{ flexShrink: 0 }}
                             >
-                              {/* หัวการ์ด: รหัส & ความสำคัญ & ผู้เปิด & Drag Grip */}
+                              {/* หัวการ์ด: รหัส & Drag Grip */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span className="ticket-tag" style={{ color: '#38BDF8' }}>
-                                    {formattedTicketId}
-                                  </span>
-                                  <span className={`badge ${priorityClass}`} style={{ fontSize: '0.625rem', padding: '2px 6px' }}>
-                                    {priorityLabel}
-                                  </span>
-                                </div>
+                                <span className="ticket-tag" style={{ color: '#38BDF8' }}>
+                                  {formattedTicketId}
+                                </span>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <span
@@ -1306,7 +1245,6 @@ export default function DevDashboard() {
                   <tr>
                     <th style={{ width: 100 }}>รหัสตั๋ว</th>
                     <th>ชื่องานและรายละเอียด</th>
-                    <th style={{ width: 100 }}>ความสำคัญ</th>
                     <th style={{ width: 130 }}>สถานะ</th>
                     <th style={{ width: 110 }}>ผู้เปิดตั๋ว</th>
                     <th style={{ width: 90, textAlign: 'center' }}>รูปแนบ</th>
@@ -1318,22 +1256,13 @@ export default function DevDashboard() {
                 <tbody>
                   {filteredTickets.length === 0 ? (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px 16px', color: '#64748B' }}>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px 16px', color: '#64748B' }}>
                         ไม่พบรายการตามเงื่อนไขที่ค้นหา
                       </td>
                     </tr>
                   ) : (
                     filteredTickets.map((ticket) => {
-                      const priorityClass = `badge-priority-${ticket.priority.toLowerCase()}`;
                       const formattedTicketId = `TF-${String(ticket.ticketNumber).padStart(2, '0')}`;
-                      const priorityLabel =
-                        ticket.priority === 'URGENT'
-                          ? 'เร่งด่วน'
-                          : ticket.priority === 'HIGH'
-                          ? 'สูง'
-                          : ticket.priority === 'MEDIUM'
-                          ? 'ปานกลาง'
-                          : 'ทั่วไป';
 
                       return (
                         <tr key={ticket.id}>
@@ -1349,11 +1278,6 @@ export default function DevDashboard() {
                             <div style={{ fontSize: '0.775rem', color: '#94A3B8', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {ticket.description}
                             </div>
-                          </td>
-                          <td>
-                            <span className={`badge ${priorityClass}`}>
-                              {priorityLabel}
-                            </span>
                           </td>
                           <td>
                             <span className={`badge badge-${ticket.status.toLowerCase().replace(/_/g, '')}`}>
@@ -1534,20 +1458,6 @@ export default function DevDashboard() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                 />
-              </div>
-
-              <div>
-                <label className="input-label">ระดับความสำคัญ</label>
-                <select
-                  className="select-field"
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as Priority)}
-                >
-                  <option value="LOW">⚪ ทั่วไป - ปรับปรุงเมื่อสะดวก</option>
-                  <option value="MEDIUM">🔵 ปานกลาง - สำคัญปกติ</option>
-                  <option value="HIGH">🟠 สูง - ควรแก้ไขโดยเร็ว</option>
-                  <option value="URGENT">🔴 เร่งด่วน - กระทบงานหลัก</option>
-                </select>
               </div>
 
               <div>
@@ -1739,31 +1649,15 @@ export default function DevDashboard() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 12 }}>
-                <div>
-                  <label className="input-label">ระดับความสำคัญ</label>
-                  <select
-                    className="select-field"
-                    value={editPriority}
-                    onChange={(e) => setEditPriority(e.target.value as Priority)}
-                  >
-                    <option value="LOW">⚪ ทั่วไป - ปรับปรุงเมื่อสะดวก</option>
-                    <option value="MEDIUM">🔵 ปานกลาง - สำคัญปกติ</option>
-                    <option value="HIGH">🟠 สูง - ควรแก้ไขโดยเร็ว</option>
-                    <option value="URGENT">🔴 เร่งด่วน - กระทบงานหลัก</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="input-label">ลิงก์ทดสอบระบบ (ไม่บังคับ)</label>
-                  <input
-                    type="url"
-                    className="input-field"
-                    placeholder="https://example.com"
-                    value={editStagingUrl}
-                    onChange={(e) => setEditStagingUrl(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="input-label">ลิงก์ทดสอบระบบ (ไม่บังคับ)</label>
+                <input
+                  type="url"
+                  className="input-field"
+                  placeholder="https://example.com"
+                  value={editStagingUrl}
+                  onChange={(e) => setEditStagingUrl(e.target.value)}
+                />
               </div>
 
               <div>
