@@ -15,7 +15,6 @@ import {
   Lock,
   Unlock,
   Sparkles,
-  Smartphone,
   Eye,
   RefreshCw,
   LayoutGrid,
@@ -103,8 +102,6 @@ export default function DevDashboard() {
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [showReadyModal, setShowReadyModal] = useState(false);
   const [selectedTicketForReady, setSelectedTicketForReady] = useState<TicketItem | null>(null);
-  const [showSimulatorModal, setShowSimulatorModal] = useState(false);
-  const [lastFlexPayload, setLastFlexPayload] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -440,11 +437,6 @@ export default function DevDashboard() {
       if (data.success) {
         setShowReadyModal(false);
         fetchTickets();
-
-        if (data.lineResult?.payload) {
-          setLastFlexPayload(data.lineResult.payload[0]);
-          setShowSimulatorModal(true);
-        }
       } else if (res.status === 401) {
         setShowAuthModal(true);
       } else {
@@ -2118,56 +2110,7 @@ export default function DevDashboard() {
         </div>
       )}
 
-      {/* 8. Modal: จำลอง Flex Message บน LINE */}
-      {showSimulatorModal && lastFlexPayload && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ padding: 24, maxWidth: 440 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Smartphone size={20} color="#06C755" />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800 }}>ตัวอย่างการ์ด LINE ที่ส่งถึงลูกค้า</h3>
-              </div>
-              <button onClick={() => setShowSimulatorModal(false)} className="btn btn-secondary" style={{ padding: '4px 8px' }}>
-                <X size={16} />
-              </button>
-            </div>
 
-            <div style={{ background: '#111827', borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-              <div style={{ background: '#0B0F17', padding: '16px 18px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#EB0A1E' }}>
-                  TaskFlow - งานพร้อมตรวจรับ
-                </div>
-                <div style={{ fontSize: '0.975rem', fontWeight: 800, color: '#FFFFFF', marginTop: 4 }}>
-                  {lastFlexPayload.contents?.header?.contents?.[1]?.text || selectedTicketForReady?.title}
-                </div>
-              </div>
-
-              <div style={{ background: '#FFFFFF', color: '#0F172A', padding: '16px 18px' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B' }}>สิ่งที่ทีม Dev แก้ไข:</div>
-                <div style={{ fontSize: '0.875rem', marginTop: 4, lineHeight: 1.5, color: '#1E293B' }}>
-                  {lastFlexPayload.contents?.body?.contents?.[1]?.text || readyReleaseNote}
-                </div>
-              </div>
-
-              <div style={{ background: '#F8FAFC', padding: 14 }}>
-                <a
-                  href={lastFlexPayload.contents?.footer?.contents?.[0]?.action?.uri || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-line"
-                  style={{ width: '100%', borderRadius: 8, padding: '10px' }}
-                >
-                  เปิดตรวจสอบและอนุมัติงาน
-                </a>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.75rem', color: '#94A3B8', textAlign: 'center', marginTop: 12 }}>
-              คุณสามารถคลิกปุ่มด้านบนเพื่อทดสอบเปิดหน้าตรวจงานของลูกค้าได้ทันที
-            </p>
-          </div>
-        </div>
-      )}
 
 
 
