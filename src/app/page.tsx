@@ -38,9 +38,13 @@ import {
   ArrowRight,
   Calendar,
   History,
+  Maximize2,
 } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
+import ConfirmModal from '@/components/ConfirmModal';
+import ImageLightbox from '@/components/ImageLightbox';
+import { useToast } from '@/components/Toast';
 
 interface ColumnConfig {
   id: TicketStatus;
@@ -89,6 +93,7 @@ const COLUMNS: ColumnConfig[] = [
 ];
 
 export default function DevDashboard() {
+  const toast = useToast();
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -105,6 +110,10 @@ export default function DevDashboard() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Custom Confirm Delete modal state
+  const [ticketToDelete, setTicketToDelete] = useState<TicketItem | null>(null);
+  const [deletingTicket, setDeletingTicket] = useState(false);
 
   // Edit ticket state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -214,11 +223,12 @@ export default function DevDashboard() {
         setShowAuthModal(false);
         setPasscode('');
         fetchTickets();
+        toast.success('เข้าสู่ระบบสำเร็จ');
       } else {
-        alert(data.error || 'รหัสผ่านไม่ถูกต้อง');
+        toast.error(data.error || 'รหัสผ่านไม่ถูกต้อง');
       }
     } catch (err) {
-      alert('เข้าสู่ระบบไม่สำเร็จ');
+      toast.error('เข้าสู่ระบบไม่สำเร็จ');
     }
   };
 
@@ -281,7 +291,7 @@ export default function DevDashboard() {
       return;
     }
     if (!newTitle.trim() || !newDescription.trim()) {
-      alert('กรุณากรอกหัวข้อและรายละเอียดงาน');
+      toast.warning('กรุณากรอกหัวข้อและรายละเอียดงาน');
       return;
     }
 
@@ -327,11 +337,12 @@ export default function DevDashboard() {
         setNewTicketFile(null);
         setNewTicketPreviewUrl(null);
         fetchTickets();
+        toast.success('สร้างตั๋วงานเรียบร้อยแล้ว');
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการสร้างตั๋วงาน');
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการสร้างตั๋วงาน');
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setCreatingTicket(false);
     }
@@ -386,7 +397,7 @@ export default function DevDashboard() {
         setShowAuthModal(true);
       } else {
         fetchTickets();
-        alert(data.error || 'ไม่สามารถเปลี่ยนสถานะได้');
+        toast.error(data.error || 'ไม่สามารถเปลี่ยนสถานะได้');
       }
     } catch (err) {
       console.error(err);
@@ -437,13 +448,14 @@ export default function DevDashboard() {
       if (data.success) {
         setShowReadyModal(false);
         fetchTickets();
+        toast.success('ส่งงานให้ลูกค้าตรวจรับและส่งแจ้งเตือน LINE เรียบร้อยแล้ว');
       } else if (res.status === 401) {
         setShowAuthModal(true);
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการส่งตรวจงาน');
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการส่งตรวจงาน');
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการส่งตรวจงาน');
+      toast.error('เกิดข้อผิดพลาดในการส่งตรวจงาน');
     } finally {
       setSendingLine(false);
     }
@@ -474,7 +486,7 @@ export default function DevDashboard() {
     }
     if (!editingTicket) return;
     if (!editTitle.trim() || !editDescription.trim()) {
-      alert('กรุณากรอกหัวข้อและรายละเอียดงาน');
+      toast.warning('กรุณากรอกหัวข้อและรายละเอียดงาน');
       return;
     }
 
@@ -519,20 +531,21 @@ export default function DevDashboard() {
         setEditDeletedAttachmentIds([]);
         setEditNewFiles([]);
         fetchTickets();
+        toast.success('บันทึกการแก้ไขตั๋วงานสำเร็จ');
       } else if (res.status === 401) {
         setShowAuthModal(true);
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการแก้ไขตั๋วงาน');
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการแก้ไขตั๋วงาน');
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSavingEdit(false);
     }
   };
 
-  // Delete Ticket
-  const handleDeleteTicket = async (id: string, e?: React.MouseEvent) => {
+  // Delete Ticket Handlers (Custom Confirm Modal)
+  const promptDeleteTicket = (ticket: TicketItem, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -541,21 +554,41 @@ export default function DevDashboard() {
       setShowAuthModal(true);
       return;
     }
-    if (!window.confirm('ยืนยันการลบตั๋วงานนี้ใช่หรือไม่? (ลบแล้วจะไม่สามารถกู้คืนได้)')) return;
+    setTicketToDelete(ticket);
+  };
+
+  const handleDeleteTicket = (id: string, e?: React.MouseEvent) => {
+    const t = tickets.find((item) => item.id === id);
+    if (t) {
+      promptDeleteTicket(t, e);
+    }
+  };
+
+  const confirmDeleteTicket = async () => {
+    if (!ticketToDelete) return;
     try {
-      const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
+      setDeletingTicket(true);
+      const res = await fetch(`/api/tickets/${ticketToDelete.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok && data.success) {
-        setTickets((prev) => prev.filter((t) => t.id !== id));
+        const deletedNum = ticketToDelete.ticketNumber;
+        setTickets((prev) => prev.filter((t) => t.id !== ticketToDelete.id));
+        if (selectedTicketForDetail?.id === ticketToDelete.id) {
+          setSelectedTicketForDetail(null);
+        }
+        setTicketToDelete(null);
         fetchTickets();
+        toast.success(`ลบตั๋วงาน TF-${String(deletedNum).padStart(2, '0')} เรียบร้อยแล้ว`);
       } else if (res.status === 401) {
         setShowAuthModal(true);
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการลบตั๋วงาน');
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการลบตั๋วงาน');
       }
     } catch (err) {
       console.error(err);
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setDeletingTicket(false);
     }
   };
 
@@ -1477,32 +1510,7 @@ export default function DevDashboard() {
         </div>
       </main>
 
-      {/* 5. Modal: รูปภาพขนาดใหญ่ (Image Lightbox) */}
-      {previewImage && (
-        <div className="modal-overlay" onClick={() => setPreviewImage(null)}>
-          <div
-            className="modal-content"
-            style={{ maxWidth: 800, padding: 18, background: '#0F172A' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#F8FAFC' }}>
-                {previewImage.name || 'ภาพหน้าจอที่แนบมา'}
-              </div>
-              <button onClick={() => setPreviewImage(null)} className="btn btn-secondary" style={{ padding: '4px 8px' }}>
-                <X size={16} />
-              </button>
-            </div>
-            <div style={{ textAlign: 'center', background: '#000000', borderRadius: 8, overflow: 'hidden', padding: 10 }}>
-              <img
-                src={previewImage.url}
-                alt="Full Preview"
-                style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: '0 auto' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* 6. Modal: สร้างตั๋วงานใหม่ (พร้อมฟังก์ชันแนบรูป) */}
       {showNewTicketModal && (
@@ -1953,36 +1961,22 @@ export default function DevDashboard() {
               <div style={{ display: 'flex', gap: 10, marginTop: 4, alignItems: 'center' }}>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    if (editingTicket) {
-                      handleDeleteTicket(editingTicket.id, e);
-                      setShowEditModal(false);
-                      setEditingTicket(null);
-                    }
-                  }}
-                  className="btn btn-danger"
-                  style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
-                  title="ลบตั๋วงานนี้ออกจากระบบ"
-                >
-                  <Trash2 size={15} /> ลบตั๋วงาน
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  className="btn btn-taskflow"
-                  style={{ flex: 1, padding: '11px' }}
-                >
-                  {savingEdit ? 'กำลังบันทึกการแก้ไข...' : 'บันทึกการแก้ไข'}
-                </button>
-                <button
-                  type="button"
                   onClick={() => {
                     setShowEditModal(false);
                     setEditingTicket(null);
                   }}
                   className="btn btn-secondary"
+                  style={{ flex: 1, padding: '11px' }}
                 >
                   ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="btn btn-taskflow"
+                  style={{ flex: 1.5, padding: '11px' }}
+                >
+                  {savingEdit ? 'กำลังบันทึกการแก้ไข...' : 'บันทึกการแก้ไข'}
                 </button>
               </div>
             </form>
@@ -2397,57 +2391,228 @@ export default function DevDashboard() {
                 </div>
               )}
 
-              {/* รูปภาพแนบ (Gallery) */}
+              {/* รูปภาพแนบ (Enhanced Preview & Gallery) */}
               {currentDetailTicket.attachments && currentDetailTicket.attachments.length > 0 && (
                 <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <ImageIcon size={15} color="#38BDF8" /> รูปภาพแนบ ({currentDetailTicket.attachments.length} รูป)
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94A3B8', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ImageIcon size={15} color="#38BDF8" />
+                      <span>รูปภาพแนบ ({currentDetailTicket.attachments.length} รูป)</span>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                      คลิกที่รูปเพื่อเปิดดูขนาดเต็ม
+                    </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
-                    {currentDetailTicket.attachments.map((att) => (
-                      <button
-                        key={att.id}
-                        type="button"
-                        onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
-                        style={{
-                          borderRadius: 8,
-                          overflow: 'hidden',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
-                          background: '#000000',
-                          padding: 0,
-                          cursor: 'pointer',
-                          position: 'relative',
-                          aspectRatio: '1',
-                          display: 'block',
-                        }}
-                        title={`คลิกเพื่อดูรูปเต็ม: ${att.fileName}`}
-                      >
-                        <img
-                          src={att.fileUrl}
-                          alt={att.fileName}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
+
+                  {currentDetailTicket.attachments.length === 1 ? (
+                    // Single Image: Featured Large Preview Card
+                    (() => {
+                      const att = currentDetailTicket.attachments[0];
+                      return (
                         <div
                           style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            padding: '4px 6px',
-                            background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
-                            fontSize: '0.65rem',
-                            color: '#FFFFFF',
+                            borderRadius: 12,
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            textAlign: 'left',
+                            border: '1px solid rgba(255, 255, 255, 0.14)',
+                            background: '#030712',
+                            boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.5)',
                           }}
                         >
-                          {att.fileName}
+                          <div
+                            onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
+                            style={{
+                              position: 'relative',
+                              maxHeight: 280,
+                              minHeight: 180,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              background: '#000000',
+                              overflow: 'hidden',
+                            }}
+                            title={`คลิกเพื่อดูรูปเต็ม: ${att.fileName}`}
+                          >
+                            <img
+                              src={att.fileUrl}
+                              alt={att.fileName}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: 280,
+                                objectFit: 'contain',
+                                display: 'block',
+                                transition: 'transform 0.2s ease',
+                              }}
+                            />
+                            {/* Hover overlay hint */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(3, 7, 18, 0.45)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                                opacity: 0,
+                                transition: 'opacity 0.18s ease',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
+                            >
+                              <div
+                                style={{
+                                  background: 'rgba(15, 23, 42, 0.85)',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                                  borderRadius: 8,
+                                  padding: '8px 14px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  color: '#FFFFFF',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
+                                }}
+                              >
+                                <Maximize2 size={15} color="#38BDF8" />
+                                <span>คลิกเพื่อดูรูปขนาดเต็ม</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer */}
+                          <div
+                            style={{
+                              padding: '10px 14px',
+                              background: 'rgba(15, 23, 42, 0.9)',
+                              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 10,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '0.8rem',
+                                color: '#E2E8F0',
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {att.fileName}
+                            </span>
+                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', gap: 4 }}
+                              >
+                                <Maximize2 size={12} />
+                                <span>ขยาย</span>
+                              </button>
+                              <a
+                                href={att.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', gap: 4 }}
+                                title="เปิดในแท็บใหม่"
+                              >
+                                <ExternalLink size={12} />
+                              </a>
+                            </div>
+                          </div>
                         </div>
-                      </button>
-                    ))}
-                  </div>
+                      );
+                    })()
+                  ) : (
+                    // Multiple Images: Clean Grid with Larger Cards
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                      {currentDetailTicket.attachments.map((att) => (
+                        <div
+                          key={att.id}
+                          style={{
+                            borderRadius: 10,
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            background: '#030712',
+                            position: 'relative',
+                            transition: 'all 0.18s ease',
+                          }}
+                        >
+                          <div
+                            onClick={() => setPreviewImage({ url: att.fileUrl, name: att.fileName })}
+                            style={{
+                              height: 150,
+                              cursor: 'pointer',
+                              position: 'relative',
+                              background: '#000000',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <img
+                              src={att.fileUrl}
+                              alt={att.fileName}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(0, 0, 0, 0.4)',
+                                opacity: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'opacity 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
+                            >
+                              <div
+                                style={{
+                                  background: 'rgba(15, 23, 42, 0.85)',
+                                  borderRadius: 6,
+                                  padding: '5px 10px',
+                                  color: '#FFFFFF',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                }}
+                              >
+                                <Maximize2 size={13} color="#38BDF8" />
+                                <span>ดูรูปเต็ม</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              padding: '8px 10px',
+                              background: 'rgba(15, 23, 42, 0.85)',
+                              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                              fontSize: '0.75rem',
+                              color: '#E2E8F0',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {att.fileName}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2636,8 +2801,7 @@ export default function DevDashboard() {
                   type="button"
                   onClick={() => {
                     const target = currentDetailTicket;
-                    setSelectedTicketForDetail(null);
-                    handleDeleteTicket(target.id);
+                    promptDeleteTicket(target);
                   }}
                   className="btn btn-secondary"
                   style={{ padding: '7px 12px', fontSize: '0.775rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
@@ -2649,6 +2813,37 @@ export default function DevDashboard() {
           </div>
         </div>
       )}
+
+      {/* Custom Confirm Modal สำหรับยืนยันการลบตั๋วงาน */}
+      <ConfirmModal
+        isOpen={!!ticketToDelete}
+        title="ยืนยันการลบตั๋วงาน"
+        description="คุณแน่ใจหรือไม่ว่าต้องการลบตั๋วงานนี้? ข้อมูลและไฟล์แนบทั้งหมดของตั๋วงานนี้จะไม่สามารถกู้คืนได้"
+        itemInfo={
+          ticketToDelete
+            ? {
+                badge: `TF-${String(ticketToDelete.ticketNumber).padStart(2, '0')}`,
+                title: ticketToDelete.title,
+              }
+            : undefined
+        }
+        confirmText="ยืนยันการลบ"
+        cancelText="ยกเลิก"
+        type="danger"
+        isLoading={deletingTicket}
+        onConfirm={confirmDeleteTicket}
+        onClose={() => {
+          if (!deletingTicket) setTicketToDelete(null);
+        }}
+      />
+
+      {/* Top-Level Image Lightbox Modal (z-index 1200) */}
+      <ImageLightbox
+        isOpen={!!previewImage}
+        imageUrl={previewImage?.url || null}
+        fileName={previewImage?.name}
+        onClose={() => setPreviewImage(null)}
+      />
     </div>
   );
 }

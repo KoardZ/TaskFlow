@@ -20,12 +20,15 @@ import {
   Paperclip,
 } from 'lucide-react';
 import Link from 'next/link';
+import ImageLightbox from '@/components/ImageLightbox';
+import { useToast } from '@/components/Toast';
 
 export default function ReviewPage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
+  const toast = useToast();
   const resolvedParams = use(params);
   const token = resolvedParams.token;
 
@@ -143,11 +146,12 @@ export default function ReviewPage({
           origin: { y: 0.6 },
           colors: ['#EB0A1E', '#10B981', '#38BDF8', '#FFFFFF'],
         });
+        toast.success('ตรวจรับงานเรียบร้อยแล้ว ขอบคุณครับ!');
       } else {
-        alert(data.error || 'บันทึกผลไม่สำเร็จ');
+        toast.error(data.error || 'บันทึกผลไม่สำเร็จ');
       }
     } catch (err: any) {
-      alert(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +171,7 @@ export default function ReviewPage({
       return;
     }
     if (!rejectionReason.trim()) {
-      alert('กรุณาระบุจุดที่ต้องการให้ทีม Dev แก้ไขเพิ่มเติม');
+      toast.warning('กรุณาระบุจุดที่ต้องการให้ทีม Dev แก้ไขเพิ่มเติม');
       return;
     }
 
@@ -211,11 +215,12 @@ export default function ReviewPage({
         setTicket(data.data);
         setActionSuccess('REJECT');
         setShowRejectForm(false);
+        toast.success('ส่งข้อความแจ้งแก้ไขให้ทีม Dev เรียบร้อยแล้ว');
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาด');
+        toast.error(data.error || 'เกิดข้อผิดพลาด');
       }
     } catch (err: any) {
-      alert(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSubmitting(false);
     }
@@ -802,29 +807,12 @@ export default function ReviewPage({
       )}
 
       {/* 6. Lightbox ดูรูปขยาย */}
-      {previewImage && (
-        <div className="modal-overlay" onClick={() => setPreviewImage(null)}>
-          <div
-            className="modal-content"
-            style={{ maxWidth: 760, padding: 16, background: '#0F172A' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontSize: '0.825rem', color: '#F8FAFC', fontWeight: 600 }}>{previewImage.name}</span>
-              <button onClick={() => setPreviewImage(null)} className="btn btn-secondary" style={{ padding: '3px 8px' }}>
-                <X size={15} />
-              </button>
-            </div>
-            <div style={{ textAlign: 'center', background: '#000000', borderRadius: 8, overflow: 'hidden', padding: 8 }}>
-              <img
-                src={previewImage.url}
-                alt="Preview"
-                style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: '0 auto' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <ImageLightbox
+        isOpen={!!previewImage}
+        imageUrl={previewImage?.url || null}
+        fileName={previewImage?.name}
+        onClose={() => setPreviewImage(null)}
+      />
 
       {/* 7. Footer */}
       <footer style={{ marginTop: 32, textAlign: 'center', fontSize: '0.75rem', color: '#64748B' }}>

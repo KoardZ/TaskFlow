@@ -9,8 +9,10 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 export default function SubmitTicketPage() {
+  const toast = useToast();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('UI_DESIGN');
   const [description, setDescription] = useState('');
@@ -38,7 +40,7 @@ export default function SubmitTicketPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
-      alert('กรุณากรอกหัวข้อและรายละเอียดให้ครบถ้วน');
+      toast.warning('กรุณากรอกหัวข้อและรายละเอียดให้ครบถ้วน');
       return;
     }
 
@@ -91,11 +93,12 @@ export default function SubmitTicketPage() {
       const data = await res.json();
       if (data.success) {
         setCreatedTicket(data.data);
+        toast.success('ส่งตั๋วงานให้ทีม Dev สำเร็จ');
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
       }
     } catch (err: any) {
-      alert(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      toast.error(err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
       setSubmitting(false);
     }
