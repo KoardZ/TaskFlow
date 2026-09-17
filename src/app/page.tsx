@@ -799,40 +799,20 @@ export default function DevDashboard() {
 
           {/* สลับมุมมอง และ รีเฟรช */}
           <div className="filter-actions-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {viewMode === 'KANBAN' && isAuthenticated && (
-              <div
-                className="helper-drag-text"
-                style={{
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 11px',
-                  borderRadius: 8,
-                  background: 'rgba(56, 189, 248, 0.08)',
-                  border: '1px solid rgba(56, 189, 248, 0.22)',
-                  fontSize: '0.75rem',
-                  color: '#BAE6FD',
-                  fontWeight: 500,
-                }}
-              >
-                <Sparkles size={13} color="#38BDF8" />
-                <span>ลากการ์ดวางข้ามคอลัมน์เพื่อเปลี่ยนสถานะ</span>
-              </div>
-            )}
-
             <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.8)', padding: 3, borderRadius: 8, border: '1px solid var(--border-card)' }}>
               <button
                 onClick={() => setViewMode('KANBAN')}
                 className={`btn ${viewMode === 'KANBAN' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ padding: '5px 10px', fontSize: '0.775rem', borderRadius: 6 }}
               >
-                <LayoutGrid size={14} /> <span className="nav-action-text">มุมมอง</span>บอร์ด
+                <LayoutGrid size={14} /> <span><span className="nav-action-text">มุมมอง</span>บอร์ด</span>
               </button>
               <button
                 onClick={() => setViewMode('TABLE')}
                 className={`btn ${viewMode === 'TABLE' ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ padding: '5px 10px', fontSize: '0.775rem', borderRadius: 6 }}
               >
-                <List size={14} /> <span className="nav-action-text">มุมมอง</span>ตาราง
+                <List size={14} /> <span><span className="nav-action-text">มุมมอง</span>ตาราง</span>
               </button>
             </div>
 
