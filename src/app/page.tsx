@@ -122,7 +122,7 @@ export default function DevDashboard() {
   const [editDescription, setEditDescription] = useState('');
   const [editStagingUrl, setEditStagingUrl] = useState('');
   const [editDeletedAttachmentIds, setEditDeletedAttachmentIds] = useState<string[]>([]);
-  const [editNewFiles, setEditNewFiles] = useState<{ id: string; file: File; preview: string; name: string }[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<{ id: string; file: File; preview: string; name: string; size: number }[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Lightbox modal for previewing images
@@ -139,15 +139,13 @@ export default function DevDashboard() {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newStagingUrl, setNewStagingUrl] = useState('');
-  const [newTicketFile, setNewTicketFile] = useState<File | null>(null);
-  const [newTicketPreviewUrl, setNewTicketPreviewUrl] = useState<string | null>(null);
+  const [newTicketFiles, setNewTicketFiles] = useState<{ id: string; file: File; preview: string; name: string; size: number }[]>([]);
   const [creatingTicket, setCreatingTicket] = useState(false);
 
   // Ready for Review form
   const [readyStagingUrl, setReadyStagingUrl] = useState('');
   const [readyReleaseNote, setReadyReleaseNote] = useState('');
-  const [readyFile, setReadyFile] = useState<File | null>(null);
-  const [readyPreviewUrl, setReadyPreviewUrl] = useState<string | null>(null);
+  const [readyFiles, setReadyFiles] = useState<{ id: string; file: File; preview: string; name: string; size: number }[]>([]);
   const [sendingLine, setSendingLine] = useState(false);
 
   // Settings form
@@ -238,34 +236,69 @@ export default function DevDashboard() {
     setIsAuthenticated(false);
   };
 
-  // Handle File selection for New Ticket
-  const handleNewTicketFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setNewTicketFile(file);
-      setNewTicketPreviewUrl(URL.createObjectURL(file));
+  // Helper to convert Files to upload state items
+  const processUploadFiles = (files: File[]) => {
+    return files.map((file) => ({
+      id: Math.random().toString(36).substring(2, 9),
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+      size: file.size,
+    }));
+  };
+
+  // Handle File selection for New Ticket (Multiple allowed)
+  const handleNewTicketFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newItems = processUploadFiles(Array.from(e.target.files));
+      setNewTicketFiles((prev) => [...prev, ...newItems]);
+      e.target.value = '';
     }
   };
 
-  // Handle File selection for Ready for Review
-  const handleReadyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setReadyFile(file);
-      setReadyPreviewUrl(URL.createObjectURL(file));
+  const handleRemoveNewTicketFile = (id: string) => {
+    setNewTicketFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Handle File selection for Ready for Review (Multiple allowed)
+  const handleReadyFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newItems = processUploadFiles(Array.from(e.target.files));
+      setReadyFiles((prev) => [...prev, ...newItems]);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveReadyFile = (id: string) => {
+    setReadyFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Handle clipboard paste of images
+  const handlePasteImagesToState = (
+    e: React.ClipboardEvent,
+    setter: React.Dispatch<React.SetStateAction<{ id: string; file: File; preview: string; name: string; size: number }[]>>
+  ) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const pastedFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) pastedFiles.push(file);
+      }
+    }
+    if (pastedFiles.length > 0) {
+      e.preventDefault();
+      const newItems = processUploadFiles(pastedFiles);
+      setter((prev) => [...prev, ...newItems]);
+      toast.success(`วางรูปภาพ ${pastedFiles.length} รูปเรียบร้อย`);
     }
   };
 
   // Handle File selection for Edit Ticket (Multiple allowed)
   const handleEditNewFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const filesArray = Array.from(e.target.files);
-      const newItems = filesArray.map((file) => ({
-        id: Math.random().toString(36).substring(2, 9),
-        file,
-        preview: URL.createObjectURL(file),
-        name: file.name,
-      }));
+      const newItems = processUploadFiles(Array.from(e.target.files));
       setEditNewFiles((prev) => [...prev, ...newItems]);
       e.target.value = '';
     }
@@ -299,20 +332,22 @@ export default function DevDashboard() {
       setCreatingTicket(true);
 
       let attachments: any[] = [];
-      if (newTicketFile) {
+      if (newTicketFiles.length > 0) {
         const formData = new FormData();
-        formData.append('file', newTicketFile);
+        newTicketFiles.forEach((item) => {
+          formData.append('files', item.file);
+        });
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (uploadData.success) {
-          attachments.push({
-            fileUrl: uploadData.fileUrl,
-            fileName: uploadData.fileName,
-            fileType: uploadData.fileType,
-          });
+        if (uploadData.success && Array.isArray(uploadData.files)) {
+          attachments = uploadData.files.map((f: any) => ({
+            fileUrl: f.fileUrl,
+            fileName: f.fileName,
+            fileType: f.fileType,
+          }));
         }
       }
 
@@ -334,8 +369,7 @@ export default function DevDashboard() {
         setNewTitle('');
         setNewDescription('');
         setNewStagingUrl('');
-        setNewTicketFile(null);
-        setNewTicketPreviewUrl(null);
+        setNewTicketFiles([]);
         fetchTickets();
         toast.success('สร้างตั๋วงานเรียบร้อยแล้ว');
       } else {
@@ -359,8 +393,7 @@ export default function DevDashboard() {
       setSelectedTicketForReady(ticket);
       setReadyStagingUrl(ticket.stagingUrl || settingsData.defaultStagingUrl || '');
       setReadyReleaseNote(ticket.releaseNote || 'ทีม Dev ได้แก้ไขและนำขึ้นระบบเรียบร้อยแล้ว');
-      setReadyFile(null);
-      setReadyPreviewUrl(null);
+      setReadyFiles([]);
       setShowReadyModal(true);
       return;
     }
@@ -418,20 +451,22 @@ export default function DevDashboard() {
       setSendingLine(true);
 
       let attachments: any[] = [];
-      if (readyFile) {
+      if (readyFiles.length > 0) {
         const formData = new FormData();
-        formData.append('file', readyFile);
+        readyFiles.forEach((item) => {
+          formData.append('files', item.file);
+        });
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (uploadData.success) {
-          attachments.push({
-            fileUrl: uploadData.fileUrl,
-            fileName: uploadData.fileName,
-            fileType: uploadData.fileType,
-          });
+        if (uploadData.success && Array.isArray(uploadData.files)) {
+          attachments = uploadData.files.map((f: any) => ({
+            fileUrl: f.fileUrl,
+            fileName: f.fileName,
+            fileType: f.fileType,
+          }));
         }
       }
 
@@ -447,6 +482,7 @@ export default function DevDashboard() {
       const data = await res.json();
       if (data.success) {
         setShowReadyModal(false);
+        setReadyFiles([]);
         fetchTickets();
         toast.success('ส่งงานให้ลูกค้าตรวจรับและส่งแจ้งเตือน LINE เรียบร้อยแล้ว');
       } else if (res.status === 401) {
@@ -1535,55 +1571,119 @@ export default function DevDashboard() {
 
               {/* แนบรูปภาพประกอบ */}
               <div>
-                <label className="input-label">แนบรูปภาพประกอบ (ถ้ามี)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="input-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ImageIcon size={14} color="#38BDF8" /> แนบรูปภาพประกอบ (ถ้ามี)
+                  </label>
+                  {newTicketFiles.length > 0 && (
+                    <span style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 600 }}>
+                      เลือกแล้ว {newTicketFiles.length} รูป
+                    </span>
+                  )}
+                </div>
+
+                {/* Thumbnails preview list */}
+                {newTicketFiles.length > 0 && (
+                  <div style={{ marginBottom: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))', gap: 8 }}>
+                    {newTicketFiles.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          position: 'relative',
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          background: 'rgba(56, 189, 248, 0.05)',
+                          padding: 4,
+                        }}
+                      >
+                        <div
+                          onClick={() => setPreviewImage({ url: item.preview, name: item.name })}
+                          style={{
+                            cursor: 'pointer',
+                            height: 64,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            background: 'rgba(0, 0, 0, 0.3)',
+                          }}
+                          title="คลิกเพื่อดูตัวอย่าง"
+                        >
+                          <img
+                            src={item.preview}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div style={{ padding: '4px 2px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              color: '#CBD5E1',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 60,
+                            }}
+                            title={item.name}
+                          >
+                            {item.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNewTicketFile(item.id)}
+                            style={{
+                              border: 'none',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              color: '#EF4444',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              padding: '2px 4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="ลบรูปนี้"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dropzone */}
                 <div
+                  onPaste={(e) => handlePasteImagesToState(e, setNewTicketFiles)}
+                  tabIndex={0}
                   style={{
                     border: '2px dashed rgba(255, 255, 255, 0.15)',
                     borderRadius: 10,
-                    padding: 16,
+                    padding: newTicketFiles.length > 0 ? 12 : 18,
                     textAlign: 'center',
                     cursor: 'pointer',
                     background: 'rgba(15, 23, 42, 0.5)',
                     position: 'relative',
+                    outline: 'none',
                   }}
                 >
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleNewTicketFileChange}
+                    multiple
+                    onChange={handleNewTicketFilesChange}
                     style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 1 }}
                   />
-                  {newTicketPreviewUrl ? (
-                    <div style={{ position: 'relative', zIndex: 2 }}>
-                      <img
-                        src={newTicketPreviewUrl}
-                        alt="Preview"
-                        style={{ maxHeight: 130, borderRadius: 6, margin: '0 auto 8px', objectFit: 'contain' }}
-                      />
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#38BDF8' }}>คลิกเพื่อเปลี่ยนรูป</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setNewTicketFile(null);
-                            setNewTicketPreviewUrl(null);
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '2px 8px', fontSize: '0.7rem', color: '#FDA4AF' }}
-                        >
-                          ลบรูป
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload size={24} color="#94A3B8" style={{ margin: '0 auto 6px' }} />
-                      <p style={{ fontSize: '0.8rem', color: '#CBD5E1', fontWeight: 600 }}>
-                        คลิกหรือลากไฟล์รูปภาพประกอบมาวางที่นี่
-                      </p>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Upload size={18} color="#38BDF8" />
+                    <span style={{ fontSize: '0.78rem', color: '#CBD5E1', fontWeight: 500 }}>
+                      {newTicketFiles.length > 0
+                        ? 'คลิกหรือลากไฟล์มาวางเพื่อเพิ่มรูปอีก (หรือกด Ctrl+V)'
+                        : 'คลิกหรือลากไฟล์รูปภาพมาวาง (เลือกได้หลายรูป หรือกด Ctrl+V)'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1733,129 +1833,45 @@ export default function DevDashboard() {
                 />
               </div>
 
-              {/* Attachments Section: Manage existing & Add new */}
+              {/* Attachments Section: Unified Horizontal Gallery */}
               <div style={{ background: 'rgba(15, 23, 42, 0.4)', padding: '12px 14px', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <label className="input-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ImageIcon size={14} color="#38BDF8" /> รูปภาพประกอบ
                   </label>
-                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 600 }}>
                     {((editingTicket.attachments?.filter(a => !editDeletedAttachmentIds.includes(a.id)).length || 0) + editNewFiles.length)} รูป
                   </span>
                 </div>
 
-                {/* 1. Existing Attachments List */}
-                {editingTicket.attachments && editingTicket.attachments.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: 6, fontWeight: 600 }}>
-                      รูปเดิมที่แนบไว้ ({editingTicket.attachments.length} รูป)
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
-                      {editingTicket.attachments.map((att) => {
-                        const isDeleted = editDeletedAttachmentIds.includes(att.id);
-                        return (
-                          <div
-                            key={att.id}
-                            style={{
-                              position: 'relative',
-                              borderRadius: 8,
-                              overflow: 'hidden',
-                              border: isDeleted
-                                ? '1.5px dashed rgba(239, 68, 68, 0.6)'
-                                : '1px solid rgba(255, 255, 255, 0.12)',
-                              background: isDeleted ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.3)',
-                              opacity: isDeleted ? 0.5 : 1,
-                              transition: 'all 0.2s ease',
-                              padding: 4,
-                            }}
-                          >
-                            <div
-                              onClick={() => {
-                                if (!isDeleted) setPreviewImage({ url: att.fileUrl, name: att.fileName });
-                              }}
-                              style={{
-                                cursor: isDeleted ? 'default' : 'pointer',
-                                height: 68,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: 6,
-                                overflow: 'hidden',
-                                background: 'rgba(0, 0, 0, 0.3)',
-                              }}
-                              title={isDeleted ? 'รูปนี้จะถูกลบเมื่อกดบันทึก' : 'คลิกเพื่อดูรูปขนาดเต็ม'}
-                            >
-                              <img
-                                src={att.fileUrl}
-                                alt={att.fileName}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            </div>
-                            <div style={{ padding: '4px 2px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span
-                                style={{
-                                  fontSize: '0.65rem',
-                                  color: isDeleted ? '#F87171' : '#94A3B8',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  maxWidth: 55,
-                                }}
-                                title={att.fileName}
-                              >
-                                {isDeleted ? 'จะถูกลบ' : att.fileName}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleDeleteExistingAttachment(att.id)}
-                                style={{
-                                  border: 'none',
-                                  background: isDeleted ? 'rgba(56, 189, 248, 0.25)' : 'rgba(239, 68, 68, 0.2)',
-                                  color: isDeleted ? '#38BDF8' : '#EF4444',
-                                  borderRadius: 4,
-                                  cursor: 'pointer',
-                                  padding: '2px 5px',
-                                  fontSize: '0.65rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 2,
-                                  fontWeight: 600,
-                                }}
-                                title={isDeleted ? 'ยกเลิกการลบ (คืนค่า)' : 'ลบรูปนี้'}
-                              >
-                                {isDeleted ? 'คืนค่า' : <Trash2 size={11} />}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. New Files Preview List */}
-                {editNewFiles.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: '0.72rem', color: '#10B981', marginBottom: 6, fontWeight: 600 }}>
-                      รูปใหม่ที่จะเพิ่ม ({editNewFiles.length} รูป)
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
-                      {editNewFiles.map((item) => (
+                {/* Unified Horizontal Grid for all images */}
+                {((editingTicket.attachments && editingTicket.attachments.length > 0) || editNewFiles.length > 0) && (
+                  <div style={{ marginBottom: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
+                    {/* 1. Existing Attachments */}
+                    {editingTicket.attachments?.map((att) => {
+                      const isDeleted = editDeletedAttachmentIds.includes(att.id);
+                      return (
                         <div
-                          key={item.id}
+                          key={att.id}
                           style={{
                             position: 'relative',
                             borderRadius: 8,
                             overflow: 'hidden',
-                            border: '1px solid rgba(16, 185, 129, 0.35)',
-                            background: 'rgba(16, 185, 129, 0.08)',
+                            border: isDeleted
+                              ? '1.5px dashed rgba(239, 68, 68, 0.6)'
+                              : '1px solid rgba(255, 255, 255, 0.12)',
+                            background: isDeleted ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.3)',
+                            opacity: isDeleted ? 0.5 : 1,
+                            transition: 'all 0.2s ease',
                             padding: 4,
                           }}
                         >
                           <div
-                            onClick={() => setPreviewImage({ url: item.preview, name: item.name })}
+                            onClick={() => {
+                              if (!isDeleted) setPreviewImage({ url: att.fileUrl, name: att.fileName });
+                            }}
                             style={{
-                              cursor: 'pointer',
+                              cursor: isDeleted ? 'default' : 'pointer',
                               height: 68,
                               display: 'flex',
                               alignItems: 'center',
@@ -1864,11 +1880,11 @@ export default function DevDashboard() {
                               overflow: 'hidden',
                               background: 'rgba(0, 0, 0, 0.3)',
                             }}
-                            title="คลิกเพื่อดูตัวอย่าง"
+                            title={isDeleted ? 'รูปนี้จะถูกลบเมื่อกดบันทึก' : 'คลิกเพื่อดูรูปขนาดเต็ม'}
                           >
                             <img
-                              src={item.preview}
-                              alt={item.name}
+                              src={att.fileUrl}
+                              alt={att.fileName}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           </div>
@@ -1876,42 +1892,115 @@ export default function DevDashboard() {
                             <span
                               style={{
                                 fontSize: '0.65rem',
-                                color: '#A7F3D0',
+                                color: isDeleted ? '#F87171' : '#94A3B8',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                maxWidth: 65,
+                                maxWidth: 55,
                               }}
-                              title={item.name}
+                              title={att.fileName}
                             >
-                              {item.name}
+                              {isDeleted ? 'จะถูกลบ' : att.fileName}
                             </span>
                             <button
                               type="button"
-                              onClick={() => handleRemoveEditNewFile(item.id)}
+                              onClick={() => handleToggleDeleteExistingAttachment(att.id)}
                               style={{
                                 border: 'none',
-                                background: 'rgba(239, 68, 68, 0.2)',
-                                color: '#EF4444',
+                                background: isDeleted ? 'rgba(56, 189, 248, 0.25)' : 'rgba(239, 68, 68, 0.2)',
+                                color: isDeleted ? '#38BDF8' : '#EF4444',
                                 borderRadius: 4,
                                 cursor: 'pointer',
-                                padding: '2px 4px',
+                                padding: '2px 5px',
+                                fontSize: '0.65rem',
                                 display: 'flex',
                                 alignItems: 'center',
+                                gap: 2,
+                                fontWeight: 600,
                               }}
-                              title="ยกเลิกรูปนี้"
+                              title={isDeleted ? 'ยกเลิกการลบ (คืนค่า)' : 'ลบรูปนี้'}
                             >
-                              <X size={12} />
+                              {isDeleted ? 'คืนค่า' : <Trash2 size={11} />}
                             </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
+
+                    {/* 2. New Files */}
+                    {editNewFiles.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          position: 'relative',
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          background: 'rgba(56, 189, 248, 0.05)',
+                          padding: 4,
+                        }}
+                      >
+                        <div
+                          onClick={() => setPreviewImage({ url: item.preview, name: item.name })}
+                          style={{
+                            cursor: 'pointer',
+                            height: 68,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            background: 'rgba(0, 0, 0, 0.3)',
+                          }}
+                          title="คลิกเพื่อดูตัวอย่าง"
+                        >
+                          <img
+                            src={item.preview}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div style={{ padding: '4px 2px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              color: '#CBD5E1',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 60,
+                            }}
+                            title={item.name}
+                          >
+                            {item.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEditNewFile(item.id)}
+                            style={{
+                              border: 'none',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              color: '#EF4444',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              padding: '2px 4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="ยกเลิกรูปนี้"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {/* 3. Upload Dropzone for New Attachments */}
+                {/* Dropzone */}
                 <div
+                  onPaste={(e) => handlePasteImagesToState(e, setEditNewFiles)}
+                  tabIndex={0}
                   style={{
                     border: '1.5px dashed rgba(255, 255, 255, 0.15)',
                     borderRadius: 8,
@@ -1920,6 +2009,7 @@ export default function DevDashboard() {
                     cursor: 'pointer',
                     background: 'rgba(15, 23, 42, 0.4)',
                     position: 'relative',
+                    outline: 'none',
                   }}
                 >
                   <input
@@ -1932,7 +2022,7 @@ export default function DevDashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Upload size={18} color="#38BDF8" />
                     <span style={{ fontSize: '0.78rem', color: '#CBD5E1', fontWeight: 500 }}>
-                      คลิกหรือลากไฟล์รูปภาพประกอบมาวางเพื่อเพิ่มรูปใหม่ (เลือกได้หลายรูป)
+                      คลิกหรือลากไฟล์รูปภาพมาวางเพื่อเพิ่มรูป (เลือกได้หลายรูป หรือกด Ctrl+V)
                     </span>
                   </div>
                 </div>
@@ -2007,53 +2097,119 @@ export default function DevDashboard() {
 
               {/* แนบรูปผลงาน */}
               <div>
-                <label className="input-label">แนบรูปภาพประกอบผลงานหลังแก้ (ถ้ามี):</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="input-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ImageIcon size={14} color="#06C755" /> แนบรูปภาพประกอบผลงานหลังแก้ (ถ้ามี)
+                  </label>
+                  {readyFiles.length > 0 && (
+                    <span style={{ fontSize: '0.72rem', color: '#06C755', fontWeight: 600 }}>
+                      เลือกแล้ว {readyFiles.length} รูป
+                    </span>
+                  )}
+                </div>
+
+                {/* Thumbnails preview list */}
+                {readyFiles.length > 0 && (
+                  <div style={{ marginBottom: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))', gap: 8 }}>
+                    {readyFiles.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          position: 'relative',
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          border: '1px solid rgba(6, 199, 85, 0.3)',
+                          background: 'rgba(6, 199, 85, 0.05)',
+                          padding: 4,
+                        }}
+                      >
+                        <div
+                          onClick={() => setPreviewImage({ url: item.preview, name: item.name })}
+                          style={{
+                            cursor: 'pointer',
+                            height: 64,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            background: 'rgba(0, 0, 0, 0.3)',
+                          }}
+                          title="คลิกเพื่อดูตัวอย่าง"
+                        >
+                          <img
+                            src={item.preview}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div style={{ padding: '4px 2px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              color: '#CBD5E1',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 60,
+                            }}
+                            title={item.name}
+                          >
+                            {item.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReadyFile(item.id)}
+                            style={{
+                              border: 'none',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              color: '#EF4444',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              padding: '2px 4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="ลบรูปนี้"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dropzone */}
                 <div
+                  onPaste={(e) => handlePasteImagesToState(e, setReadyFiles)}
+                  tabIndex={0}
                   style={{
                     border: '2px dashed rgba(255, 255, 255, 0.15)',
                     borderRadius: 10,
-                    padding: 14,
+                    padding: readyFiles.length > 0 ? 12 : 18,
                     textAlign: 'center',
                     cursor: 'pointer',
                     background: 'rgba(15, 23, 42, 0.5)',
                     position: 'relative',
+                    outline: 'none',
                   }}
                 >
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleReadyFileChange}
+                    multiple
+                    onChange={handleReadyFilesChange}
                     style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 1 }}
                   />
-                  {readyPreviewUrl ? (
-                    <div style={{ position: 'relative', zIndex: 2 }}>
-                      <img
-                        src={readyPreviewUrl}
-                        alt="Preview"
-                        style={{ maxHeight: 120, borderRadius: 6, margin: '0 auto 6px', objectFit: 'contain' }}
-                      />
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                        <span style={{ fontSize: '0.75rem', color: '#38BDF8' }}>เปลี่ยนรูป</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setReadyFile(null);
-                            setReadyPreviewUrl(null);
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '2px 8px', fontSize: '0.7rem', color: '#FDA4AF' }}
-                        >
-                          ลบรูป
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload size={22} color="#94A3B8" style={{ margin: '0 auto 4px' }} />
-                      <p style={{ fontSize: '0.8rem', color: '#CBD5E1' }}>คลิกเพื่อแนบรูปภาพผลงานหลังแก้ไข</p>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Upload size={18} color="#06C755" />
+                    <span style={{ fontSize: '0.78rem', color: '#CBD5E1', fontWeight: 500 }}>
+                      {readyFiles.length > 0
+                        ? 'คลิกหรือลากไฟล์มาวางเพื่อเพิ่มรูปผลงานอีก (หรือกด Ctrl+V)'
+                        : 'คลิกหรือลากไฟล์รูปผลงานมาวาง (เลือกได้หลายรูป หรือกด Ctrl+V)'}
+                    </span>
+                  </div>
                 </div>
               </div>
 

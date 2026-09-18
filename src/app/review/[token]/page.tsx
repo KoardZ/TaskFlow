@@ -50,10 +50,51 @@ export default function ReviewPage({
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [rejectionFile, setRejectionFile] = useState<File | null>(null);
-  const [rejectionPreviewUrl, setRejectionPreviewUrl] = useState<string | null>(null);
+  const [rejectionFiles, setRejectionFiles] = useState<{ id: string; file: File; preview: string; name: string; size: number }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<'APPROVE' | 'REJECT' | null>(null);
+
+  const handleRejectionFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selected = Array.from(e.target.files).map((f) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file: f,
+        preview: URL.createObjectURL(f),
+        name: f.name,
+        size: f.size,
+      }));
+      setRejectionFiles((prev) => [...prev, ...selected]);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveRejectionFile = (id: string) => {
+    setRejectionFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handlePasteRejectionImages = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const pasted: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const f = items[i].getAsFile();
+        if (f) pasted.push(f);
+      }
+    }
+    if (pasted.length > 0) {
+      e.preventDefault();
+      const newItems = pasted.map((f) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file: f,
+        preview: URL.createObjectURL(f),
+        name: f.name || `issue-screenshot-${Date.now()}.png`,
+        size: f.size,
+      }));
+      setRejectionFiles((prev) => [...prev, ...newItems]);
+      toast.success(`วางรูปภาพ ${pasted.length} รูปเรียบร้อย`);
+    }
+  };
 
   // 1. Fetch Ticket details
   const fetchTicket = async () => {
@@ -179,20 +220,22 @@ export default function ReviewPage({
       setSubmitting(true);
 
       let attachments: any[] = [];
-      if (rejectionFile) {
+      if (rejectionFiles.length > 0) {
         const formData = new FormData();
-        formData.append('file', rejectionFile);
+        rejectionFiles.forEach((item) => {
+          formData.append('files', item.file);
+        });
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
         const uploadData = await uploadRes.json();
-        if (uploadData.success) {
-          attachments.push({
-            fileUrl: uploadData.fileUrl,
-            fileName: uploadData.fileName,
-            fileType: uploadData.fileType,
-          });
+        if (uploadData.success && Array.isArray(uploadData.files)) {
+          attachments = uploadData.files.map((f: any) => ({
+            fileUrl: f.fileUrl,
+            fileName: f.fileName,
+            fileType: f.fileType,
+          }));
         }
       }
 
@@ -215,6 +258,7 @@ export default function ReviewPage({
         setTicket(data.data);
         setActionSuccess('REJECT');
         setShowRejectForm(false);
+        setRejectionFiles([]);
         toast.success('ส่งข้อความแจ้งแก้ไขให้ทีม Dev เรียบร้อยแล้ว');
       } else {
         toast.error(data.error || 'เกิดข้อผิดพลาด');
@@ -657,58 +701,119 @@ export default function ReviewPage({
 
                   {/* แนบรูปภาพ Screenshot จุดที่ต้องการให้แก้ */}
                   <div style={{ marginBottom: 12 }}>
-                    <label className="input-label" style={{ color: '#FDA4AF' }}>
-                      แนบภาพหน้าจอจุดที่พบปัญหา (ถ้ามี):
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label className="input-label" style={{ color: '#FDA4AF', marginBottom: 0 }}>
+                        แนบภาพหน้าจอจุดที่พบปัญหา (ถ้ามี):
+                      </label>
+                      {rejectionFiles.length > 0 && (
+                        <span style={{ fontSize: '0.72rem', color: '#FDA4AF', fontWeight: 600 }}>
+                          เลือกแล้ว {rejectionFiles.length} รูป
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Thumbnails preview list */}
+                    {rejectionFiles.length > 0 && (
+                      <div style={{ marginBottom: 10, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))', gap: 8 }}>
+                        {rejectionFiles.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              position: 'relative',
+                              borderRadius: 8,
+                              overflow: 'hidden',
+                              border: '1px solid rgba(239, 68, 68, 0.4)',
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              padding: 4,
+                            }}
+                          >
+                            <div
+                              onClick={() => setPreviewImage({ url: item.preview, name: item.name })}
+                              style={{
+                                cursor: 'pointer',
+                                height: 64,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 6,
+                                overflow: 'hidden',
+                                background: 'rgba(0, 0, 0, 0.4)',
+                              }}
+                              title="คลิกเพื่อดูตัวอย่าง"
+                            >
+                              <img
+                                src={item.preview}
+                                alt={item.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </div>
+                            <div style={{ padding: '4px 2px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.65rem',
+                                  color: '#FECDD3',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: 60,
+                                }}
+                                title={item.name}
+                              >
+                                {item.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRejectionFile(item.id)}
+                                style={{
+                                  border: 'none',
+                                  background: 'rgba(239, 68, 68, 0.25)',
+                                  color: '#EF4444',
+                                  borderRadius: 4,
+                                  cursor: 'pointer',
+                                  padding: '2px 4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}
+                                title="ลบรูปนี้"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Dropzone */}
                     <div
+                      onPaste={handlePasteRejectionImages}
+                      tabIndex={0}
                       style={{
                         border: '2px dashed rgba(239, 68, 68, 0.3)',
                         borderRadius: 8,
-                        padding: 12,
+                        padding: rejectionFiles.length > 0 ? 10 : 14,
                         textAlign: 'center',
                         cursor: 'pointer',
                         background: 'rgba(0, 0, 0, 0.3)',
                         position: 'relative',
+                        outline: 'none',
                       }}
                     >
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            const file = e.target.files[0];
-                            setRejectionFile(file);
-                            setRejectionPreviewUrl(URL.createObjectURL(file));
-                          }
-                        }}
+                        multiple
+                        onChange={handleRejectionFilesChange}
                         style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 1 }}
                       />
-                      {rejectionPreviewUrl ? (
-                        <div style={{ position: 'relative', zIndex: 2 }}>
-                          <img
-                            src={rejectionPreviewUrl}
-                            alt="Preview"
-                            style={{ maxHeight: 110, borderRadius: 6, margin: '0 auto 6px', objectFit: 'contain' }}
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRejectionFile(null);
-                              setRejectionPreviewUrl(null);
-                            }}
-                            className="btn btn-secondary"
-                            style={{ padding: '2px 8px', fontSize: '0.7rem', color: '#FDA4AF' }}
-                          >
-                            ลบรูป
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <Upload size={20} color="#FDA4AF" style={{ margin: '0 auto 4px' }} />
-                          <p style={{ fontSize: '0.775rem', color: '#FECDD3' }}>คลิกเพื่อแนบรูปภาพประกอบจุดที่ต้องแก้ไข</p>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Upload size={18} color="#FDA4AF" />
+                        <span style={{ fontSize: '0.775rem', color: '#FECDD3' }}>
+                          {rejectionFiles.length > 0
+                            ? 'คลิกหรือลากไฟล์มาวางเพื่อเพิ่มรูปอีก (หรือกด Ctrl+V)'
+                            : 'คลิกหรือลากไฟล์รูปภาพมาวาง (เลือกได้หลายรูป หรือกด Ctrl+V)'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
