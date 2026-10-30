@@ -110,6 +110,7 @@ export default function DevDashboard() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [devUserName, setDevUserName] = useState('');
 
   // Custom Confirm Delete modal state
   const [ticketToDelete, setTicketToDelete] = useState<TicketItem | null>(null);
@@ -180,6 +181,7 @@ export default function DevDashboard() {
       const authRes = await fetch('/api/auth/check');
       const authData = await authRes.json();
       setIsAuthenticated(authData.authenticated);
+      setDevUserName(authData.userName || '');
 
       const setRes = await fetch('/api/settings');
       const setData = await setRes.json();
@@ -206,24 +208,29 @@ export default function DevDashboard() {
     checkAuthAndSettings();
   }, []);
 
-  // Handle Passcode login
+  // Handle Dev Name login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passcode.trim()) {
+      toast.warning('กรุณาระบุชื่อของคุณ');
+      return;
+    }
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode }),
+        body: JSON.stringify({ name: passcode.trim() }),
       });
       const data = await res.json();
       if (data.success) {
         setIsAuthenticated(true);
+        setDevUserName(data.userName || passcode.trim());
         setShowAuthModal(false);
         setPasscode('');
         fetchTickets();
-        toast.success('เข้าสู่ระบบสำเร็จ');
+        toast.success(`เข้าสู่ระบบในชื่อ "${data.userName || passcode.trim()}" สำเร็จ`);
       } else {
-        toast.error(data.error || 'รหัสผ่านไม่ถูกต้อง');
+        toast.error(data.error || 'ไม่สามารถเข้าสู่ระบบได้');
       }
     } catch (err) {
       toast.error('เข้าสู่ระบบไม่สำเร็จ');
@@ -234,6 +241,7 @@ export default function DevDashboard() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setIsAuthenticated(false);
+    setDevUserName('');
   };
 
   // Helper to convert Files to upload state items
@@ -706,7 +714,7 @@ export default function DevDashboard() {
               }}
               className="btn btn-taskflow"
               style={{ fontSize: '0.825rem', padding: '7px 14px' }}
-              title={!isAuthenticated ? 'ใส่รหัส Dev เพื่อสร้างตั๋วงาน' : 'สร้างตั๋วงานใหม่'}
+              title={!isAuthenticated ? 'ระบุชื่อผู้ใช้งานเพื่อสร้างตั๋วงาน' : 'สร้างตั๋วงานใหม่'}
             >
               {isAuthenticated ? <Plus size={16} /> : <Lock size={14} />} <span className="nav-action-text">สร้างตั๋วงาน</span>
             </button>
@@ -715,19 +723,19 @@ export default function DevDashboard() {
               <button
                 onClick={handleLogout}
                 className="btn btn-secondary"
-                title="คลิกเพื่อออกจากระบบ Dev"
+                title="คลิกเพื่อเปลี่ยนชื่อหรือออกจากระบบ"
                 style={{ padding: '7px 12px', fontSize: '0.75rem', color: '#34D399', borderColor: 'rgba(16, 185, 129, 0.3)' }}
               >
-                <Unlock size={14} /> <span className="nav-action-text">Dev Active</span>
+                <User size={14} /> <span className="nav-action-text">{devUserName || 'Dev Active'}</span>
               </button>
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
                 className="btn btn-secondary"
-                title="เข้าสู่ระบบด้วยรหัส Dev เพื่อจัดการบอร์ด"
+                title="ระบุชื่อผู้ใช้งานเพื่อจัดการบอร์ด"
                 style={{ padding: '7px 12px', fontSize: '0.75rem', color: '#FDA4AF' }}
               >
-                <Lock size={14} /> <span className="nav-action-text">ใส่รหัส Dev</span>
+                <Lock size={14} /> <span className="nav-action-text">ระบุชื่อผู้ใช้งาน</span>
               </button>
             )}
           </div>
@@ -1052,7 +1060,7 @@ export default function DevDashboard() {
                                       color: ticket.createdBy === 'CLIENT' ? '#38BDF8' : '#64748B',
                                     }}
                                   >
-                                    {ticket.createdBy === 'CLIENT' ? 'ลูกค้า' : 'ทีม Dev'}
+                                    {ticket.createdBy === 'CLIENT' ? 'ลูกค้า' : ticket.createdBy === 'DEV' ? 'ทีม Dev' : ticket.createdBy}
                                   </span>
                                   {isAuthenticated && (
                                     <span title="คลิกลากเพื่อย้ายสถานะ" style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -1402,7 +1410,7 @@ export default function DevDashboard() {
                           </td>
                           <td>
                             <span style={{ fontSize: '0.8rem', color: ticket.createdBy === 'CLIENT' ? '#38BDF8' : '#94A3B8' }}>
-                              {ticket.createdBy === 'CLIENT' ? 'ลูกค้า' : 'ทีม Dev'}
+                              {ticket.createdBy === 'CLIENT' ? 'ลูกค้า' : ticket.createdBy === 'DEV' ? 'ทีม Dev' : ticket.createdBy}
                             </span>
                           </td>
                           <td style={{ textAlign: 'center' }}>
@@ -2244,30 +2252,30 @@ export default function DevDashboard() {
 
 
 
-      {/* 10. Modal: ปลดล็อก Dev Passcode */}
+      {/* 10. Modal: ระบุชื่อผู้ใช้งาน */}
       {showAuthModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ padding: 24, maxWidth: 380 }}>
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(235, 10, 30, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                <Lock size={20} color="#EB0A1E" />
+                <User size={20} color="#EB0A1E" />
               </div>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>ยืนยันสิทธิ์ทีม Dev</h2>
-              <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>กรุณากรอกรหัสผ่านเพื่อแก้ไขข้อมูลบนบอร์ด</p>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800 }}>ระบุชื่อผู้ดำเนินการ</h2>
+              <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>กรุณาพิมพ์ชื่อของคุณเพื่อใช้อ้างอิงในการจัดการข้อมูลบนบอร์ด</p>
             </div>
 
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
-                type="password"
+                type="text"
                 required
                 className="input-field"
-                placeholder="กรอกรหัสผ่าน"
+                placeholder="พิมพ์ชื่อของคุณ เช่น ต้น, แนน, Dev A"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 autoFocus
               />
               <button type="submit" className="btn btn-taskflow" style={{ width: '100%', padding: '11px' }}>
-                ปลดล็อก
+                เข้าใช้งาน
               </button>
               <button type="button" onClick={() => setShowAuthModal(false)} className="btn btn-secondary">
                 ยกเลิก
@@ -2443,7 +2451,7 @@ export default function DevDashboard() {
                 </span>
 
                 <span style={{ fontSize: '0.75rem', color: currentDetailTicket.createdBy === 'CLIENT' ? '#38BDF8' : '#94A3B8' }}>
-                  เปิดโดย: <strong>{currentDetailTicket.createdBy === 'CLIENT' ? 'ลูกค้า' : 'ทีม Dev'}</strong>
+                  เปิดโดย: <strong>{currentDetailTicket.createdBy === 'CLIENT' ? 'ลูกค้า' : currentDetailTicket.createdBy === 'DEV' ? 'ทีม Dev' : currentDetailTicket.createdBy}</strong>
                 </span>
               </div>
 

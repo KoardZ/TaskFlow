@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, ensureDatabase } from '@/lib/prisma';
-import { checkDevAuth } from '@/lib/auth';
+import { getDevUser } from '@/lib/auth';
 
 export async function GET(
   req: NextRequest,
@@ -34,10 +34,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
+    const devUser = await getDevUser();
+    if (!devUser) {
       return NextResponse.json(
-        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อแก้ไขข้อมูลตั๋วงาน' },
+        { success: false, error: 'กรุณาระบุชื่อของคุณเพื่อแก้ไขข้อมูลตั๋วงาน' },
         { status: 401 }
       );
     }
@@ -77,6 +77,15 @@ export async function PATCH(
       }
     }
 
+    await prisma.activityLog.create({
+      data: {
+        ticketId: id,
+        action: 'EDITED',
+        actor: devUser,
+        details: 'แก้ไขข้อมูลตั๋วงาน',
+      },
+    });
+
     const updated = await prisma.ticket.update({
       where: { id },
       data: updateData,
@@ -85,15 +94,6 @@ export async function PATCH(
         activities: {
           orderBy: { createdAt: 'desc' },
         },
-      },
-    });
-
-    await prisma.activityLog.create({
-      data: {
-        ticketId: id,
-        action: 'EDITED',
-        actor: 'DEV',
-        details: 'แก้ไขข้อมูลตั๋วงาน',
       },
     });
 
@@ -108,10 +108,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
+    const devUser = await getDevUser();
+    if (!devUser) {
       return NextResponse.json(
-        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อลบตั๋วงาน' },
+        { success: false, error: 'กรุณาระบุชื่อของคุณเพื่อลบตั๋วงาน' },
         { status: 401 }
       );
     }

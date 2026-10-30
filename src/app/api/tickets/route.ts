@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma, ensureDatabase } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
 import { pushLineMessage, createNewTicketFlex } from '@/lib/line';
-import { checkDevAuth } from '@/lib/auth';
+import { getDevUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,16 +38,17 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
+    const devUser = await getDevUser();
+    if (!devUser) {
       return NextResponse.json(
-        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อสร้างตั๋วงาน' },
+        { success: false, error: 'กรุณาระบุชื่อของคุณเพื่อสร้างตั๋วงาน' },
         { status: 401 }
       );
     }
 
     const body = await req.json();
-    const { title, description, priority = 'MEDIUM', createdBy = 'DEV', stagingUrl, attachments } = body;
+    const { title, description, priority = 'MEDIUM', createdBy, stagingUrl, attachments } = body;
+    const creatorName = createdBy === 'CLIENT' ? 'CLIENT' : devUser;
 
     if (!title || !description) {
       return NextResponse.json(
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
         status: 'BACKLOG',
         stagingUrl: stagingUrl || null,
         reviewToken,
-        createdBy,
+        createdBy: creatorName,
         attachments: attachments && attachments.length > 0
           ? {
               create: attachments.map((att: any) => ({
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
         activities: {
           create: {
             action: 'CREATED',
-            actor: createdBy,
+            actor: creatorName,
             details: `สร้างตั๋วงาน #${ticketNumber}`,
           },
         },

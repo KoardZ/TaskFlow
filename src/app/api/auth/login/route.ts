@@ -3,18 +3,20 @@ import { setDevAuthCookie } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const { passcode } = await req.json();
-    if (!passcode) {
-      return NextResponse.json({ success: false, error: 'กรุณากรอกรหัสผ่าน' }, { status: 400 });
+    const body = await req.json();
+    const rawName = (body.name || body.passcode || '').trim();
+    if (!rawName) {
+      return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อของคุณ' }, { status: 400 });
     }
 
-    const valid = await setDevAuthCookie(passcode);
-    if (!valid) {
-      return NextResponse.json({ success: false, error: 'รหัสผ่านไม่ถูกต้อง' }, { status: 401 });
+    const userName = await setDevAuthCookie(rawName);
+    if (!userName) {
+      return NextResponse.json({ success: false, error: 'ชื่อไม่ถูกต้อง' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, userName });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message || 'Server error' }, { status: 500 });
   }
 }
+

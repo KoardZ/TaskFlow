@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, ensureDatabase } from '@/lib/prisma';
 import { pushLineMessage, createReadyForReviewFlex, getLineConfig } from '@/lib/line';
-import { checkDevAuth } from '@/lib/auth';
+import { getDevUser } from '@/lib/auth';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isAuth = await checkDevAuth();
-    if (!isAuth) {
+    const devUser = await getDevUser();
+    if (!devUser) {
       return NextResponse.json(
-        { success: false, error: 'กรุณาใส่รหัส Dev เพื่อส่งงานให้ลูกค้าตรวจรับ' },
+        { success: false, error: 'กรุณาระบุชื่อของคุณเพื่อส่งงานให้ลูกค้าตรวจรับ' },
         { status: 401 }
       );
     }
@@ -51,7 +51,7 @@ export async function POST(
         activities: {
           create: {
             action: 'SENT_REVIEW',
-            actor: 'DEV',
+            actor: devUser,
             details: `ส่งตรวจงานเข้ากลุ่ม LINE: ${releaseNote || 'แก้เสร็จแล้ว'}`,
           },
         },

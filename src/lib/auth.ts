@@ -1,48 +1,45 @@
 import { cookies } from 'next/headers';
-import { prisma } from './prisma';
 
 const AUTH_COOKIE_NAME = 'dev_auth_token';
 
-export async function checkDevAuth(): Promise<boolean> {
+export async function getDevUser(): Promise<string | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return false;
+  if (!token) return null;
 
-  const setting = await prisma.systemSetting.findUnique({
-    where: { id: 'default' },
-  });
-
-  const correctPasscode = process.env.ADMIN_PASSCODE || setting?.adminPasscode || 'admin1234';
-  const validTokens = [
-    Buffer.from(correctPasscode).toString('base64'),
-    Buffer.from('1234').toString('base64'),
-    Buffer.from('admin1234').toString('base64'),
-  ];
-  return validTokens.includes(token);
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8').trim();
+    if (!decoded) return null;
+    // Ignore legacy fixed passcodes so existing cookies re-prompt for a real name
+    if (decoded === '1234' || decoded === 'admin1234') return null;
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
-export async function setDevAuthCookie(passcode: string): Promise<boolean> {
-  const setting = await prisma.systemSetting.findUnique({
-    where: { id: 'default' },
+export async function checkDevAuth(): Promise<boolean> {
+  const user = await getDevUser();
+  return !!user;
+}
+
+export async function setDevAuthCookie(name: string): Promise<string | null> {
+  const cleanName = (name || '').trim();
+  if (!cleanName) return null;
+
+  const cookieStore = await cookies();
+  cookieStore.set(AUTH_COOKIE_NAME, Buffer.from(cleanName, 'utf-8').toString('base64'), {
+    httpOnly: true,
+    secure: false, // Allow both HTTP and HTTPS
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
   });
-
-  const correctPasscode = process.env.ADMIN_PASSCODE || setting?.adminPasscode || 'admin1234';
-
-  if (passcode === correctPasscode || passcode === '1234' || passcode === 'admin1234') {
-    const cookieStore = await cookies();
-    cookieStore.set(AUTH_COOKIE_NAME, Buffer.from(passcode).toString('base64'), {
-      httpOnly: true,
-      secure: false, // Allow both HTTP and HTTPS
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
-    return true;
-  }
-  return false;
+  return cleanName;
 }
 
 export async function clearDevAuthCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE_NAME);
 }
+
